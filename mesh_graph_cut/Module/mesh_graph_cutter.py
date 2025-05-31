@@ -3,15 +3,34 @@ import torch
 import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
+import open3d.visualization.gui as gui
+import open3d.visualization.rendering as rendering
 from typing import Union
-from scipy.spatial import cKDTree
+from tqdm import tqdm
 from collections import deque
+from scipy.spatial import cKDTree
+from tqdm_joblib import tqdm_joblib
 from joblib import Parallel, delayed
 
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
 from mesh_graph_cut.Method.sample import toFPSIdxs
 from mesh_graph_cut.Method.curvature import toVisiableVertexCurvature
+
+
+def compute_min_radius_cover_all(V, centers):
+    """
+    V: [N, 3] 所有顶点坐标
+    centers: [K] 中心点在V中的索引
+    return: 最小半径r，使得所有顶点被至少一个球覆盖
+    """
+    center_xyz = V[centers]  # [K, 3]
+
+    # 对每个点，找它到所有中心点的距离最小值
+    dist = np.linalg.norm(V[:, None, :] - center_xyz[None, :, :], axis=-1)  # [N, K]
+    min_dists = np.min(dist, axis=1)  # [N] 每个点到最近中心的距离
+
+    return np.max(min_dists)
 
 
 def build_vertex_to_face_map(F, n_vertices):
@@ -54,9 +73,11 @@ def run_parallel_region_growing(V, F, centers, radius, n_jobs=8):
     tree = cKDTree(V)
     v2f = build_vertex_to_face_map(F, len(V))
 
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(find_connected_faces)(idx, V, F, tree, v2f, radius) for idx in centers
-    )
+    with tqdm_joblib(tqdm(desc="Region Growing", total=len(centers))):
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(find_connected_faces)(idx, V, F, tree, v2f, radius)
+            for idx in centers
+        )
     return {center: faces for center, faces in results}
 
 
@@ -69,6 +90,7 @@ def visualize_region_map_by_vertex(V, F, region_map):
     mesh = o3d.geometry.TriangleMesh()
     mesh.vertices = o3d.utility.Vector3dVector(V)
     mesh.triangles = o3d.utility.Vector3iVector(F)
+    mesh.compute_vertex_normals()
 
     # 默认每个顶点为灰色
     vertex_colors = np.ones((len(V), 3)) * 0.7
@@ -86,6 +108,76 @@ def visualize_region_map_by_vertex(V, F, region_map):
 
     mesh.vertex_colors = o3d.utility.Vector3dVector(vertex_colors)
     o3d.visualization.draw_geometries([mesh])
+
+
+def draw_mesh_with_transparent_spheres(mesh, spheres):
+    app = gui.Application.instance
+    app.initialize()
+
+    win = app.create_window("Region Growing + Spheres", 1024, 768)
+    scene = gui.SceneWidget()
+    scene.scene = rendering.Open3DScene(win.renderer)
+
+    mat_mesh = rendering.MaterialRecord()
+    mat_mesh.shader = "defaultLit"
+
+    scene.scene.add_geometry("mesh", mesh, mat_mesh)
+
+    for i, sphere in enumerate(spheres):
+        mat_sphere = rendering.MaterialRecord()
+        mat_sphere.shader = "defaultLitTransparency"
+        mat_sphere.base_color = [1.0, 0.0, 0.0, 0.2]  # 最后一个是 alpha
+        mat_sphere.base_roughness = 0.5
+        mat_sphere.point_size = 3.0
+        scene.scene.add_geometry(f"sphere_{i}", sphere, mat_sphere)
+
+    scene.setup_camera(60, mesh.get_axis_aligned_bounding_box(), [0, 0, 0])
+    win.add_child(scene)
+    app.run()
+
+
+def visualize_region_map_with_spheres(V, F, region_map, centers, radius):
+    """
+    V: 顶点坐标 [N, 3]
+    F: 三角面片 [M, 3]
+    region_map: Dict[center_idx -> List[face_idx]]
+    centers: List[int]  # 中心点的顶点索引
+    radius: float  # 球半径
+    """
+    mesh = o3d.geometry.TriangleMesh()
+    mesh.vertices = o3d.utility.Vector3dVector(V)
+    mesh.triangles = o3d.utility.Vector3iVector(F)
+
+    # 每个顶点默认灰色
+    vertex_colors = np.ones((len(V), 3)) * 0.7
+    color_map = plt.get_cmap("tab20")
+    region_ids = list(region_map.keys())
+
+    for i, center in enumerate(region_ids):
+        face_indices = region_map[center]
+        color = color_map(i % 20)[:3]
+        face_vertices = F[face_indices].flatten()
+        vertex_colors[face_vertices] = color
+
+    mesh.vertex_colors = o3d.utility.Vector3dVector(vertex_colors)
+
+    # 添加透明球体：表示每个中心点影响半径
+    spheres = []
+    for i, center in enumerate(centers):
+        sphere = o3d.geometry.TriangleMesh.create_sphere(radius=radius, resolution=16)
+        sphere.translate(V[center])
+        sphere.paint_uniform_color(color_map(i % 20)[:3])
+        sphere.compute_vertex_normals()
+        sphere.compute_triangle_normals()
+        sphere.compute_vertex_normals()
+        sphere.compute_triangle_normals()
+        sphere = sphere.subdivide_midpoint(1)
+        sphere = sphere.filter_smooth_simple(1)
+        sphere.compute_vertex_normals()
+        spheres.append(sphere)
+
+    draw_mesh_with_transparent_spheres(mesh, spheres)
+    return True
 
 
 class MeshGraphCutter(object):
@@ -149,8 +241,12 @@ class MeshGraphCutter(object):
 
         fps_idxs = toFPSIdxs(self.vertices, sub_mesh_num)
 
+        print("[INFO][MeshGraphCutter::cutMesh]")
+        print("\t start compute min radius to cover all vertices...")
+        radius = compute_min_radius_cover_all(self.vertices, fps_idxs)
+
         region_map = run_parallel_region_growing(
-            self.vertices, self.triangles, fps_idxs, 0.01, os.cpu_count()
+            self.vertices, self.triangles, fps_idxs, radius, os.cpu_count()
         )
 
         visualize_region_map_by_vertex(self.vertices, self.triangles, region_map)
