@@ -1,3 +1,7 @@
+import sys
+
+sys.path.append("../diff-curvature")
+
 import os
 import numpy as np
 from mesh_graph_cut.Module.mesh_graph_cutter import MeshGraphCutter
@@ -5,7 +9,7 @@ from mesh_graph_cut.Module.mesh_graph_cutter import MeshGraphCutter
 
 def demo():
     # 设置输入和输出路径
-    mesh_file_path = "/Users/chli/Downloads/Dataset/vae测评/000.obj"
+    mesh_file_path = "/home/chli/chLi/Dataset/vae-eval/mesh/000.obj"
     output_dir = "./output"
 
     # 确保输出目录存在
@@ -20,8 +24,7 @@ def demo():
 
     # 可视化原始网格的曲率
     print("Visualizing mesh curvature...")
-    curvature_output = os.path.join(output_dir, "curvature.png")
-    mesh_graph_cutter.visualizeCurvature(curvature_output)
+    mesh_graph_cutter.visualizeCurvature()
     exit()
 
     # 执行网格切割

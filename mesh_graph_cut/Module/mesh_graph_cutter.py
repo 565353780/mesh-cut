@@ -1,18 +1,22 @@
 import os
+import torch
 import numpy as np
 import open3d as o3d
 from typing import Union, List
 
-from mesh_graph_cut.Method.curvature import toVertexCurvature, toFaceCurvature
+from diff_curvature.Module.mesh_curvature import MeshCurvature
+
+from mesh_graph_cut.Method.curvature import toVisiableVertexCurvature
 from mesh_graph_cut.Method.visualization import (
     visualize_mesh_segments,
-    visualize_vertex_curvature,
     visualize_boundary_vertices,
 )
 
 
 class MeshGraphCutter(object):
     def __init__(self, mesh_file_path: Union[str, None] = None):
+        self.mesh_curvature = MeshCurvature()
+
         self.vertices = None
         self.triangles = None
 
@@ -39,11 +43,6 @@ class MeshGraphCutter(object):
 
         return True
 
-    def updateCurvatures(self) -> bool:
-        self.vertex_curvatures = toVertexCurvature(self.vertices, self.triangles)
-        self.face_curvatures = toFaceCurvature(self.vertices, self.triangles)
-        return True
-
     def loadMesh(self, mesh_file_path: str) -> bool:
         if not os.path.exists(mesh_file_path):
             print("[ERROR][MeshGraphCutter::loadMesh]")
@@ -54,13 +53,15 @@ class MeshGraphCutter(object):
         mesh = o3d.io.read_triangle_mesh(mesh_file_path)
 
         self.vertices = np.asarray(mesh.vertices, dtype=np.float32)
-        self.triangles = np.asarray(mesh.triangles, dtype=np.int32)
+        self.triangles = np.asarray(mesh.triangles, dtype=np.int64)
 
-        if not self.updateCurvatures():
+        if not self.mesh_curvature.loadMesh(self.vertices, self.triangles, "cpu"):
             print("[ERROR][MeshGraphCutter::loadMesh]")
-            print("\t updateCurvatures failed!")
+            print("\t loadMesh failed for mesh_curvature!")
             return False
 
+        self.vertex_curvatures = self.mesh_curvature.toMeanV().cpu().numpy()
+        self.face_curvatures = self.mesh_curvature.toMeanF().cpu().numpy()
         return True
 
     def cutMesh(self, sub_mesh_num: int = 400) -> bool:
@@ -325,16 +326,16 @@ class MeshGraphCutter(object):
 
         return triangle_labels
 
-    def visualizeCurvature(self, output_path: Union[str, None] = None) -> bool:
-        """可视化网格顶点曲率"""
+    def visualizeCurvature(self) -> bool:
         if not self.isValid():
             print("[ERROR][MeshGraphCutter::visualizeCurvature]")
             print("\t mesh is not valid!")
             return False
 
-        visualize_vertex_curvature(
-            self.vertices, self.triangles, self.vertex_curvatures, output_path
-        )
+        curvature_vis = 1.0 - toVisiableVertexCurvature(self.vertex_curvatures)
+        curvature_vis = torch.from_numpy(curvature_vis).float()
+
+        self.mesh_curvature.render(curvature_vis)
         return True
 
     def visualizeSegments(self, output_path: Union[str, None] = None) -> bool:
