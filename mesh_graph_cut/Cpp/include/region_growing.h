@@ -15,8 +15,6 @@
 #include <unordered_set>
 #include <vector>
 
-namespace mesh_graph_cut_cpp {
-
 // Point cloud adaptor for nanoflann
 struct PointCloud {
   std::vector<std::array<double, 3>> points;
@@ -87,5 +85,3 @@ run_parallel_region_growing(const std::vector<std::array<double, 3>> &vertices,
                             const std::vector<std::array<size_t, 3>> &faces,
                             const std::vector<size_t> &seed_indices,
                             size_t num_segments);
-
-} // namespace mesh_graph_cut_cpp

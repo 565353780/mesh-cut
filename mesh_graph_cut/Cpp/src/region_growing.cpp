@@ -1,12 +1,4 @@
 #include "region_growing.h"
-#include <iostream>
-#include <limits>
-#include <queue>
-#include <thread>
-#include <unordered_map>
-#include <unordered_set>
-
-namespace mesh_graph_cut_cpp {
 
 double
 compute_min_radius_cover_all(const std::vector<std::array<double, 3>> &vertices,
@@ -152,5 +144,3 @@ run_parallel_region_growing(const std::vector<std::array<double, 3>> &vertices,
 
   return face_labels;
 }
-
-} // namespace mesh_graph_cut_cpp
