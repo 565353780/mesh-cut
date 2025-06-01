@@ -50,23 +50,6 @@ convert_faces(py::array_t<size_t> faces_array) {
   return faces;
 }
 
-std::vector<double> convert_curvatures(py::array_t<double> curvatures_array) {
-  auto curvatures_buffer = curvatures_array.request();
-  if (curvatures_buffer.ndim != 1) {
-    throw std::runtime_error("Curvatures array must be 1-dimensional");
-  }
-
-  size_t num_curvatures = curvatures_buffer.shape[0];
-  double *curvatures_ptr = static_cast<double *>(curvatures_buffer.ptr);
-
-  std::vector<double> curvatures(num_curvatures);
-  for (size_t i = 0; i < num_curvatures; ++i) {
-    curvatures[i] = curvatures_ptr[i];
-  }
-
-  return curvatures;
-}
-
 std::vector<size_t> convert_indices(py::array_t<size_t> indices_array) {
   auto indices_buffer = indices_array.request();
   if (indices_buffer.ndim != 1) {
@@ -87,24 +70,17 @@ std::vector<size_t> convert_indices(py::array_t<size_t> indices_array) {
 // 包装函数，用于从Python调用
 py::array_t<size_t> py_run_parallel_region_growing(
     py::array_t<double> vertices_array, py::array_t<size_t> faces_array,
-    py::array_t<double> vertex_curvatures_array,
-    py::array_t<double> face_curvatures_array,
     py::array_t<size_t> seed_indices_array, size_t num_segments) {
 
   // 转换输入数据
   std::vector<std::array<double, 3>> vertices =
       convert_vertices(vertices_array);
   std::vector<std::array<size_t, 3>> faces = convert_faces(faces_array);
-  std::vector<double> vertex_curvatures =
-      convert_curvatures(vertex_curvatures_array);
-  std::vector<double> face_curvatures =
-      convert_curvatures(face_curvatures_array);
   std::vector<size_t> seed_indices = convert_indices(seed_indices_array);
 
   // 调用C++实现
   std::vector<size_t> face_labels =
-      run_parallel_region_growing(vertices, faces, vertex_curvatures,
-                                  face_curvatures, seed_indices, num_segments);
+      run_parallel_region_growing(vertices, faces, seed_indices, num_segments);
 
   // 创建NumPy数组返回结果
   py::array_t<size_t> result = py::array_t<size_t>(face_labels.size());
@@ -118,15 +94,12 @@ py::array_t<size_t> py_run_parallel_region_growing(
   return result;
 }
 
-py::array_t<size_t>
-py_find_connected_faces(size_t start_face, py::array_t<size_t> faces_array,
-                        py::array_t<double> face_curvatures_array,
-                        double max_curvature, size_t num_vertices) {
+py::array_t<size_t> py_find_connected_faces(size_t start_face,
+                                            py::array_t<size_t> faces_array,
+                                            size_t num_vertices) {
 
   // 转换输入数据
   std::vector<std::array<size_t, 3>> faces = convert_faces(faces_array);
-  std::vector<double> face_curvatures =
-      convert_curvatures(face_curvatures_array);
 
   // 构建顶点到面片的映射
   std::vector<std::vector<size_t>> vertex_to_faces =
@@ -137,8 +110,7 @@ py_find_connected_faces(size_t start_face, py::array_t<size_t> faces_array,
 
   // 调用C++实现
   std::vector<size_t> connected_faces =
-      find_connected_faces(start_face, faces, vertex_to_faces, max_curvature,
-                           face_curvatures, visited);
+      find_connected_faces(start_face, faces, vertex_to_faces, visited);
 
   // 创建NumPy数组返回结果
   py::array_t<size_t> result = py::array_t<size_t>(connected_faces.size());
@@ -245,14 +217,11 @@ PYBIND11_MODULE(mesh_graph_cut_cpp, m) {
   m.def("run_parallel_region_growing",
         &mesh_graph_cut_cpp::py_run_parallel_region_growing,
         "Run parallel region growing algorithm", py::arg("vertices"),
-        py::arg("faces"), py::arg("vertex_curvatures"),
-        py::arg("face_curvatures"), py::arg("seed_indices"),
-        py::arg("num_segments"));
+        py::arg("faces"), py::arg("seed_indices"), py::arg("num_segments"));
 
   m.def("find_connected_faces", &mesh_graph_cut_cpp::py_find_connected_faces,
         "Find connected faces with curvature below threshold",
-        py::arg("start_face"), py::arg("faces"), py::arg("face_curvatures"),
-        py::arg("max_curvature"), py::arg("num_vertices"));
+        py::arg("start_face"), py::arg("faces"), py::arg("num_vertices"));
 
   m.def("compute_min_radius_cover_all",
         &mesh_graph_cut_cpp::py_compute_min_radius_cover_all,
