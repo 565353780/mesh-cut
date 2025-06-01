@@ -51,7 +51,6 @@ ext_modules = [
             "mesh_graph_cut/Cpp/src/bindings.cpp",
             "mesh_graph_cut/Cpp/src/region_growing.cpp",
             "mesh_graph_cut/Cpp/src/kdtree.cpp",
-            "mesh_graph_cut/Cpp/src/halfedge.cpp",
         ],
         include_dirs=[
             # 包含目录
