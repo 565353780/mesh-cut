@@ -33,8 +33,14 @@ def demo():
     end_time = time.time()
     print(f"Mesh cutting completed in {end_time - start_time:.2f} seconds")
 
-    print(mesh_graph_cutter.sub_mesh_sample_points.shape)
+    print(
+        "sub mesh sample points.shape:", mesh_graph_cutter.sub_mesh_sample_points.shape
+    )
+
+    print("Render face labels...")
+    mesh_graph_cutter.renderFaceLabels()
 
     print("Render sub meshes...")
     mesh_graph_cutter.renderSubMeshSamplePoints()
+
     return True

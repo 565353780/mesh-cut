@@ -13,7 +13,7 @@ from mesh_graph_cut_cpp import (
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
 from mesh_graph_cut.Method.curvature import toVisiableVertexCurvature
-from mesh_graph_cut.Method.render import renderSubMeshSamplePoints
+from mesh_graph_cut.Method.render import renderFaceLabels, renderSubMeshSamplePoints
 
 
 class MeshGraphCutter(object):
@@ -93,6 +93,9 @@ class MeshGraphCutter(object):
 
         self.mesh_curvature.render(curvature_vis)
         return True
+
+    def renderFaceLabels(self) -> bool:
+        return renderFaceLabels(self.vertices, self.triangles, self.face_labels)
 
     def renderSubMeshSamplePoints(self) -> bool:
         return renderSubMeshSamplePoints(self.sub_mesh_sample_points)
