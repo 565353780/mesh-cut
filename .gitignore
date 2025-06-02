@@ -6,3 +6,6 @@ build
 # output
 output
 logs
+
+# script
+sync.sh
