@@ -6,18 +6,14 @@ from typing import Union
 
 from mesh_graph_cut_cpp import (
     farthest_point_sampling,
-    compute_min_radius_cover_all,
     run_parallel_region_growing,
+    toSubMeshSamplePoints,
 )
 
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
-from mesh_graph_cut.Method.sample import toFPSIdxs
 from mesh_graph_cut.Method.curvature import toVisiableVertexCurvature
-from mesh_graph_cut.Method.render import (
-    visualize_region_map_by_vertex,
-    visualize_region_map_with_spheres,
-)
+from mesh_graph_cut.Method.render import renderSubMeshSamplePoints
 
 
 class MeshGraphCutter(object):
@@ -29,6 +25,8 @@ class MeshGraphCutter(object):
 
         self.vertex_curvatures = None
         self.face_curvatures = None
+
+        self.sub_mesh_sample_points = None
 
         if mesh_file_path is not None:
             self.loadMesh(mesh_file_path)
@@ -67,47 +65,21 @@ class MeshGraphCutter(object):
         self.face_curvatures = self.mesh_curvature.toMeanF().cpu().numpy()
         return True
 
-    def cutMesh(self, sub_mesh_num: int = 400) -> bool:
+    def cutMesh(self, sub_mesh_num: int = 400) -> Union[list, bool]:
         if not self.isValid():
             print("[ERROR][MeshGraphCutter::cutMesh]")
             print("\t mesh is not valid!")
             return False
 
-        print("mesh data:")
-        print("vertices shape:", self.vertices.shape)
-        print("triangles shape:", self.triangles.shape)
-        print("vertex_curvatures shape:", self.vertex_curvatures.shape)
-        print("face_curvatures shape:", self.face_curvatures.shape)
-
         fps_idxs = farthest_point_sampling(self.vertices, sub_mesh_num)
 
-        print("[INFO][MeshGraphCutter::cutMesh]")
-        print("\t start compute min radius to cover all vertices...")
-        radius = compute_min_radius_cover_all(self.vertices, fps_idxs)
-
-        # 使用改进的区域生长算法，传递曲率信息以便C++实现使用
-        face_labels = run_parallel_region_growing(
+        self.face_labels = run_parallel_region_growing(
             self.vertices, self.triangles, fps_idxs, sub_mesh_num
         )
 
-        # 将结果转换为与Python实现相同的格式
-        region_map = {}
-        for center in fps_idxs:
-            region_map[center] = []
-
-        # 根据面片标签构建结果
-        for face_idx, label in enumerate(face_labels):
-            if label < len(fps_idxs) and label >= 0:
-                center = fps_idxs[label]
-                if center in region_map:
-                    region_map[center].append(face_idx)
-
-        visualize_region_map_by_vertex(self.vertices, self.triangles, region_map)
-
-        visualize_region_map_with_spheres(
-            self.vertices, self.triangles, region_map, fps_idxs, radius
+        self.sub_mesh_sample_points = toSubMeshSamplePoints(
+            self.vertices, self.triangles, self.face_labels
         )
-
         return True
 
     def visualizeCurvature(self) -> bool:
@@ -121,3 +93,6 @@ class MeshGraphCutter(object):
 
         self.mesh_curvature.render(curvature_vis)
         return True
+
+    def renderSubMeshes(self) -> bool:
+        return renderSubMeshSamplePoints(self.sub_mesh_sample_points)

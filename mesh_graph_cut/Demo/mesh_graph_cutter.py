@@ -23,7 +23,7 @@ def demo():
     mesh_graph_cutter = MeshGraphCutter(mesh_file_path)
 
     # 可视化原始网格的曲率
-    print("Visualizing mesh curvature...")
+    # print("Visualizing mesh curvature...")
     # mesh_graph_cutter.visualizeCurvature()
 
     # 执行网格切割
@@ -32,4 +32,9 @@ def demo():
     mesh_graph_cutter.cutMesh(sub_mesh_num)
     end_time = time.time()
     print(f"Mesh cutting completed in {end_time - start_time:.2f} seconds")
+
+    print(mesh_graph_cutter.sub_mesh_sample_points.shape)
+
+    print("Render sub meshes...")
+    mesh_graph_cutter.renderSubMeshes()
     return True

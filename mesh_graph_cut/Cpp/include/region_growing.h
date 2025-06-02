@@ -41,7 +41,7 @@ struct PointCloud {
  * @param seed_indices 种子点索引
  * @return double 最小覆盖半径
  */
-double
+const double
 compute_min_radius_cover_all(const std::vector<std::array<double, 3>> &vertices,
                              const std::vector<size_t> &seed_indices);
 
@@ -52,7 +52,7 @@ compute_min_radius_cover_all(const std::vector<std::array<double, 3>> &vertices,
  * @param num_vertices 顶点数量
  * @return std::vector<std::vector<size_t>> 顶点到面片的映射
  */
-std::vector<std::vector<size_t>>
+const std::vector<std::vector<size_t>>
 build_vertex_to_face_map(const std::vector<std::array<size_t, 3>> &faces,
                          size_t num_vertices);
 
@@ -66,7 +66,7 @@ build_vertex_to_face_map(const std::vector<std::array<size_t, 3>> &faces,
  * @param radius 搜索半径
  * @return std::vector<size_t> 连通面片索引数组
  */
-std::vector<size_t> find_connected_faces(
+const std::vector<size_t> find_connected_faces(
     size_t center_idx, const std::vector<std::array<double, 3>> &vertices,
     const std::vector<std::array<size_t, 3>> &faces,
     const std::vector<std::vector<size_t>> &vertex_to_faces, double radius);
@@ -78,9 +78,9 @@ std::vector<size_t> find_connected_faces(
  * @param faces 面片数组
  * @param seed_indices 种子点索引
  * @param num_segments 分割数量
- * @return std::vector<size_t> 面片标签数组
+ * @return std::vector<std::vector<size_t>> 每个种子点对应的连通面片索引数组集合
  */
-std::vector<size_t>
+std::vector<std::vector<size_t>>
 run_parallel_region_growing(const std::vector<std::array<double, 3>> &vertices,
                             const std::vector<std::array<size_t, 3>> &faces,
                             const std::vector<size_t> &seed_indices,

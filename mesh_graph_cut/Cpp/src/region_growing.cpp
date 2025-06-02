@@ -1,6 +1,7 @@
 #include "region_growing.h"
+#include <iostream>
 
-double
+const double
 compute_min_radius_cover_all(const std::vector<std::array<double, 3>> &vertices,
                              const std::vector<size_t> &seed_indices) {
   // 构建点云数据
@@ -31,7 +32,7 @@ compute_min_radius_cover_all(const std::vector<std::array<double, 3>> &vertices,
   return std::sqrt(max_min_dist);
 }
 
-std::vector<std::vector<size_t>>
+const std::vector<std::vector<size_t>>
 build_vertex_to_face_map(const std::vector<std::array<size_t, 3>> &faces,
                          size_t num_vertices) {
   std::vector<std::vector<size_t>> vertex_to_faces(num_vertices);
@@ -52,7 +53,7 @@ double distance_squared(const std::array<double, 3> &p1,
   return dx * dx + dy * dy + dz * dz;
 }
 
-std::vector<size_t> find_connected_faces(
+const std::vector<size_t> find_connected_faces(
     size_t center_idx, const std::vector<std::array<double, 3>> &vertices,
     const std::vector<std::array<size_t, 3>> &faces,
     const std::vector<std::vector<size_t>> &vertex_to_faces, double radius) {
@@ -113,34 +114,29 @@ std::vector<size_t> find_connected_faces(
   return std::vector<size_t>(connected_faces.begin(), connected_faces.end());
 }
 
-std::vector<size_t>
+std::vector<std::vector<size_t>>
 run_parallel_region_growing(const std::vector<std::array<double, 3>> &vertices,
                             const std::vector<std::array<size_t, 3>> &faces,
                             const std::vector<size_t> &seed_indices,
                             size_t num_segments) {
   // 计算覆盖半径
-  double radius = compute_min_radius_cover_all(vertices, seed_indices);
+  const double radius = compute_min_radius_cover_all(vertices, seed_indices);
 
   // 构建顶点到面片的映射
-  auto vertex_to_faces = build_vertex_to_face_map(faces, vertices.size());
+  const auto vertex_to_faces = build_vertex_to_face_map(faces, vertices.size());
 
-  // 初始化结果数组，-1表示未分配
-  std::vector<size_t> face_labels(faces.size(),
-                                  std::numeric_limits<size_t>::max());
+  // 初始化结果数组，用于存储每个种子点对应的连通面片数组
+  std::vector<std::vector<size_t>> all_connected_faces;
+  all_connected_faces.reserve(seed_indices.size());
 
   // 对每个种子点进行区域生长
   for (size_t i = 0; i < seed_indices.size(); ++i) {
-    auto connected_faces = find_connected_faces(seed_indices[i], vertices,
-                                                faces, vertex_to_faces, radius);
+    const auto connected_faces = find_connected_faces(
+        seed_indices[i], vertices, faces, vertex_to_faces, radius);
 
-    // 标记连通的面片
-    for (size_t face_id : connected_faces) {
-      // 如果面片未被标记或当前种子点更近，则更新标签
-      if (face_labels[face_id] == std::numeric_limits<size_t>::max()) {
-        face_labels[face_id] = i;
-      }
-    }
+    // 将当前种子点的连通面片数组添加到结果中
+    all_connected_faces.push_back(connected_faces);
   }
 
-  return face_labels;
+  return all_connected_faces;
 }
