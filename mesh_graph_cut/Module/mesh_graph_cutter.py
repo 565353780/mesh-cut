@@ -4,7 +4,11 @@ import numpy as np
 import open3d as o3d
 from typing import Union
 
-from mesh_graph_cut_cpp import compute_min_radius_cover_all, run_parallel_region_growing
+from mesh_graph_cut_cpp import (
+    farthest_point_sampling,
+    compute_min_radius_cover_all,
+    run_parallel_region_growing,
+)
 
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
@@ -75,7 +79,7 @@ class MeshGraphCutter(object):
         print("vertex_curvatures shape:", self.vertex_curvatures.shape)
         print("face_curvatures shape:", self.face_curvatures.shape)
 
-        fps_idxs = toFPSIdxs(self.vertices, sub_mesh_num)
+        fps_idxs = farthest_point_sampling(self.vertices, sub_mesh_num)
 
         print("[INFO][MeshGraphCutter::cutMesh]")
         print("\t start compute min radius to cover all vertices...")

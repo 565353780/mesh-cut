@@ -24,12 +24,25 @@ if is_mac:
         "-Wno-unused-parameter",
         "-stdlib=libc++",
         "-mmacosx-version-min=10.14",
+        "-fopenmp",
     ]
-    link_args += ["-stdlib=libc++", "-mmacosx-version-min=10.14"]
+    link_args += [
+        "-stdlib=libc++",
+        "-mmacosx-version-min=10.14",
+        "-lomp",  # macOS需要链接libomp
+    ]
 elif is_linux:
-    compile_args += ["-std=c++14", "-O3", "-Wall", "-Wextra", "-fPIC"]
+    compile_args += [
+        "-std=c++14",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-fPIC",
+        "-fopenmp",
+    ]
+    link_args += ["-fopenmp"]
 elif is_windows:
-    compile_args += ["/O2", "/Wall", "/std:c++14"]
+    compile_args += ["/O2", "/Wall", "/std:c++14", "/openmp"]
 
 
 # 定义pybind11的路径
@@ -51,6 +64,7 @@ ext_modules = [
             "mesh_graph_cut/Cpp/src/bindings.cpp",
             "mesh_graph_cut/Cpp/src/region_growing.cpp",
             "mesh_graph_cut/Cpp/src/kdtree.cpp",
+            "mesh_graph_cut/Cpp/src/sample.cpp",
         ],
         include_dirs=[
             # 包含目录
