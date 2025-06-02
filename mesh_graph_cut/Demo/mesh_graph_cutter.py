@@ -36,5 +36,5 @@ def demo():
     print(mesh_graph_cutter.sub_mesh_sample_points.shape)
 
     print("Render sub meshes...")
-    mesh_graph_cutter.renderSubMeshes()
+    mesh_graph_cutter.renderSubMeshSamplePoints()
     return True

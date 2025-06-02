@@ -94,5 +94,5 @@ class MeshGraphCutter(object):
         self.mesh_curvature.render(curvature_vis)
         return True
 
-    def renderSubMeshes(self) -> bool:
+    def renderSubMeshSamplePoints(self) -> bool:
         return renderSubMeshSamplePoints(self.sub_mesh_sample_points)
