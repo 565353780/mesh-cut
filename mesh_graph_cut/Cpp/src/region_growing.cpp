@@ -90,16 +90,16 @@ std::vector<size_t> find_connected_faces(
       const auto &face = faces[face_id];
 
       // 检查面片的所有顶点是否都在球内
-      bool all_vertices_in_ball = true;
+      bool any_vertices_in_ball = false;
       for (size_t vertex_idx : face) {
-        if (vertices_in_ball.count(vertex_idx) == 0) {
-          all_vertices_in_ball = false;
+        if (vertices_in_ball.count(vertex_idx) > 0) {
+          any_vertices_in_ball = true;
           break;
         }
       }
 
       // 如果面片所有顶点都在球内，将其加入结果，并将未访问的顶点加入队列
-      if (all_vertices_in_ball) {
+      if (any_vertices_in_ball) {
         connected_faces.insert(face_id);
         for (size_t vertex_idx : face) {
           if (visited_vertices.count(vertex_idx) == 0) {

@@ -17,7 +17,7 @@ def demo():
         os.makedirs(output_dir)
 
     # 设置分割参数
-    sub_mesh_num = 400  # 分割成10个子网格
+    sub_mesh_num = 4000
 
     print("Loading mesh from", mesh_file_path)
     mesh_graph_cutter = MeshGraphCutter(mesh_file_path)
