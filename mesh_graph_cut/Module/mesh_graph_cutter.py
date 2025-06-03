@@ -65,7 +65,9 @@ class MeshGraphCutter(object):
         self.face_curvatures = self.mesh_curvature.toMeanF().cpu().numpy()
         return True
 
-    def cutMesh(self, sub_mesh_num: int = 400) -> Union[list, bool]:
+    def cutMesh(
+        self, sub_mesh_num: int = 400, points_per_submesh: int = 8192
+    ) -> Union[list, bool]:
         if not self.isValid():
             print("[ERROR][MeshGraphCutter::cutMesh]")
             print("\t mesh is not valid!")
@@ -78,7 +80,7 @@ class MeshGraphCutter(object):
         )
 
         self.sub_mesh_sample_points = toSubMeshSamplePoints(
-            self.vertices, self.triangles, self.face_labels
+            self.vertices, self.triangles, self.face_labels, points_per_submesh
         )
         return True
 

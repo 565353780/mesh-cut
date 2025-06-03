@@ -146,9 +146,10 @@ inline void sample_triangle_uniform(const float *v0, const float *v1,
   }
 }
 
-py::array_t<float> toSubMeshSamplePoints(py::array_t<float> vertices,
-                                         py::array_t<int> triangles,
-                                         const std::vector<std::vector<size_t>>& face_groups) {
+py::array_t<float>
+toSubMeshSamplePoints(py::array_t<float> vertices, py::array_t<int> triangles,
+                      const std::vector<std::vector<size_t>> &face_groups,
+                      const int &points_per_submesh) {
   // 获取输入数组的信息
   auto vertices_buf = vertices.request();
   auto triangles_buf = triangles.request();
@@ -163,10 +164,9 @@ py::array_t<float> toSubMeshSamplePoints(py::array_t<float> vertices,
   const int *triangles_ptr = static_cast<int *>(triangles_buf.ptr);
 
   const int NUM_SUBMESHES = face_groups.size();
-  const int POINTS_PER_SUBMESH = 8192;
 
   // 创建结果数组
-  std::vector<size_t> result_shape = {NUM_SUBMESHES, POINTS_PER_SUBMESH, dim};
+  std::vector<size_t> result_shape = {NUM_SUBMESHES, points_per_submesh, dim};
   py::array_t<float> result(result_shape);
   auto result_buf = result.request();
   float *result_ptr = static_cast<float *>(result_buf.ptr);
@@ -181,13 +181,13 @@ py::array_t<float> toSubMeshSamplePoints(py::array_t<float> vertices,
 
   // 直接使用提供的面片组
   for (int submesh_id = 0; submesh_id < NUM_SUBMESHES; ++submesh_id) {
-    const auto& face_indices = face_groups[submesh_id];
-    
+    const auto &face_indices = face_groups[submesh_id];
+
     // 将面片索引添加到子网格三角形列表
     for (size_t i = 0; i < face_indices.size(); ++i) {
       size_t f = face_indices[i];
       submesh_triangles[submesh_id].push_back(static_cast<int>(f));
-      
+
       // 获取三角形顶点
       int v0_idx = triangles_ptr[f * 3];
       int v1_idx = triangles_ptr[f * 3 + 1];
@@ -219,9 +219,9 @@ py::array_t<float> toSubMeshSamplePoints(py::array_t<float> vertices,
 
       if (triangle_indices.empty() || total_area <= 0.0f) {
         // 如果子网格为空或面积为零，填充零
-        for (int i = 0; i < POINTS_PER_SUBMESH; ++i) {
+        for (int i = 0; i < points_per_submesh; ++i) {
           for (int d = 0; d < dim; ++d) {
-            result_ptr[submesh_id * POINTS_PER_SUBMESH * dim + i * dim + d] =
+            result_ptr[submesh_id * points_per_submesh * dim + i * dim + d] =
                 0.0f;
           }
         }
@@ -235,13 +235,13 @@ py::array_t<float> toSubMeshSamplePoints(py::array_t<float> vertices,
       for (size_t i = 0; i < triangle_indices.size(); ++i) {
         // 根据面积比例分配点数
         float area_ratio = areas[i] / total_area;
-        int num_points = static_cast<int>(area_ratio * POINTS_PER_SUBMESH);
+        int num_points = static_cast<int>(area_ratio * points_per_submesh);
         points_per_triangle[i] = num_points;
         total_assigned += num_points;
       }
 
       // 处理由于舍入导致的点数差异
-      int remaining = POINTS_PER_SUBMESH - total_assigned;
+      int remaining = points_per_submesh - total_assigned;
       if (remaining > 0) {
         // 将剩余点分配给最大的三角形
         int max_area_idx = 0;
@@ -273,7 +273,7 @@ py::array_t<float> toSubMeshSamplePoints(py::array_t<float> vertices,
         // 在三角形内均匀采样点
         for (int j = 0; j < num_points; ++j) {
           float *sample_point = result_ptr +
-                                submesh_id * POINTS_PER_SUBMESH * dim +
+                                submesh_id * points_per_submesh * dim +
                                 point_idx * dim;
           sample_triangle_uniform(v0, v1, v2, sample_point, dim, gen);
           point_idx++;
@@ -281,13 +281,13 @@ py::array_t<float> toSubMeshSamplePoints(py::array_t<float> vertices,
       }
 
       // 确保我们有足够的点
-      if (point_idx < POINTS_PER_SUBMESH) {
+      if (point_idx < points_per_submesh) {
         // 如果由于舍入误差导致点数不足，复制已有点
-        for (int i = point_idx; i < POINTS_PER_SUBMESH; ++i) {
+        for (int i = point_idx; i < points_per_submesh; ++i) {
           int src_idx = i % point_idx;
           for (int d = 0; d < dim; ++d) {
-            result_ptr[submesh_id * POINTS_PER_SUBMESH * dim + i * dim + d] =
-                result_ptr[submesh_id * POINTS_PER_SUBMESH * dim +
+            result_ptr[submesh_id * points_per_submesh * dim + i * dim + d] =
+                result_ptr[submesh_id * points_per_submesh * dim +
                            src_idx * dim + d];
           }
         }

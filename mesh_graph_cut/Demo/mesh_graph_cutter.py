@@ -18,6 +18,7 @@ def demo():
 
     # 设置分割参数
     sub_mesh_num = 4000
+    points_per_submesh = 8192
 
     print("Loading mesh from", mesh_file_path)
     mesh_graph_cutter = MeshGraphCutter(mesh_file_path)
@@ -29,7 +30,7 @@ def demo():
     # 执行网格切割
     print(f"Cutting mesh into {sub_mesh_num} segments...")
     start_time = time.time()
-    mesh_graph_cutter.cutMesh(sub_mesh_num)
+    mesh_graph_cutter.cutMesh(sub_mesh_num, points_per_submesh)
     end_time = time.time()
     print(f"Mesh cutting completed in {end_time - start_time:.2f} seconds")
 
