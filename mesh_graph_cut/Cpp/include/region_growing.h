@@ -1,6 +1,5 @@
 #pragma once
 
-#include "halfedge.h"
 #include "nanoflann.hpp"
 #include <algorithm>
 #include <atomic>
