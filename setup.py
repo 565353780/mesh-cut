@@ -63,7 +63,6 @@ ext_modules = [
         [
             "mesh_graph_cut/Cpp/src/bindings.cpp",
             "mesh_graph_cut/Cpp/src/region_growing.cpp",
-            "mesh_graph_cut/Cpp/src/kdtree.cpp",
             "mesh_graph_cut/Cpp/src/sample.cpp",
         ],
         include_dirs=[
@@ -122,3 +121,4 @@ setup(
     ],
     zip_safe=False,
 )
+
