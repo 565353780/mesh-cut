@@ -23,9 +23,13 @@ class MeshGraphCutter(object):
         self.vertices = None
         self.triangles = None
 
+        self.vertex_normals = None
+
         self.vertex_curvatures = None
         self.face_curvatures = None
 
+        # cut mesh results
+        self.fps_vertex_idxs = None
         self.sub_mesh_sample_points = None
 
         if mesh_file_path is not None:
@@ -37,6 +41,10 @@ class MeshGraphCutter(object):
             return False
         if self.triangles is None:
             return False
+
+        if self.vertex_normals is None:
+            return False
+
         if self.vertex_curvatures is None:
             return False
         if self.face_curvatures is None:
@@ -56,6 +64,9 @@ class MeshGraphCutter(object):
         self.vertices = np.asarray(mesh.vertices, dtype=np.float32)
         self.triangles = np.asarray(mesh.triangles, dtype=np.int64)
 
+        mesh.compute_vertex_normals()
+        self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float32)
+
         if not self.mesh_curvature.loadMesh(self.vertices, self.triangles, "cpu"):
             print("[ERROR][MeshGraphCutter::loadMesh]")
             print("\t loadMesh failed for mesh_curvature!")
@@ -73,10 +84,10 @@ class MeshGraphCutter(object):
             print("\t mesh is not valid!")
             return False
 
-        fps_idxs = farthest_point_sampling(self.vertices, sub_mesh_num)
+        self.fps_vertex_idxs = farthest_point_sampling(self.vertices, sub_mesh_num)
 
         self.face_labels = run_parallel_region_growing(
-            self.vertices, self.triangles, fps_idxs, sub_mesh_num
+            self.vertices, self.triangles, self.fps_vertex_idxs, sub_mesh_num
         )
 
         self.sub_mesh_sample_points = toSubMeshSamplePoints(
