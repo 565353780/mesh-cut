@@ -61,19 +61,39 @@ class MeshGraphCutter(object):
 
         mesh = o3d.io.read_triangle_mesh(mesh_file_path)
 
-        self.vertices = np.asarray(mesh.vertices, dtype=np.float32)
+        self.vertices = np.asarray(mesh.vertices, dtype=np.float64)
         self.triangles = np.asarray(mesh.triangles, dtype=np.int64)
 
         mesh.compute_vertex_normals()
-        self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float32)
+        self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
+        return True
 
+    def estimateCurvatures(self) -> bool:
         if not self.mesh_curvature.loadMesh(self.vertices, self.triangles, "cpu"):
-            print("[ERROR][MeshGraphCutter::loadMesh]")
+            print("[ERROR][MeshGraphCutter::estimateCurvatures]")
             print("\t loadMesh failed for mesh_curvature!")
             return False
 
         self.vertex_curvatures = self.mesh_curvature.toMeanV().cpu().numpy()
         self.face_curvatures = self.mesh_curvature.toMeanF().cpu().numpy()
+        return True
+
+    def subDivMesh(self, target_vertex_num: int) -> bool:
+        if self.vertices.shape[0] >= target_vertex_num:
+            return True
+
+        mesh = o3d.geometry.TriangleMesh()
+        mesh.points = o3d.utility.Vector3dVector(self.vertices)
+        mesh.triangles = o3d.utility.Vector3iVector(self.triangles)
+
+        while len(mesh.vertices) < target_vertex_num:
+            mesh = mesh.subdivide_loop(number_of_iterations=1)
+
+        self.vertices = np.asarray(mesh.vertices, dtype=np.float64)
+        self.triangles = np.asarray(mesh.triangles, dtype=np.int64)
+
+        mesh.compute_vertex_normals()
+        self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
         return True
 
     def cutMesh(
@@ -83,6 +103,8 @@ class MeshGraphCutter(object):
             print("[ERROR][MeshGraphCutter::cutMesh]")
             print("\t mesh is not valid!")
             return False
+
+        self.subDivMesh(sub_mesh_num)
 
         self.fps_vertex_idxs = farthest_point_sampling(self.vertices, sub_mesh_num)
 
