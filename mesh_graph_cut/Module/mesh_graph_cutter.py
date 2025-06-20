@@ -73,7 +73,7 @@ class MeshGraphCutter(object):
             return True
 
         mesh = o3d.geometry.TriangleMesh()
-        mesh.points = o3d.utility.Vector3dVector(self.vertices)
+        mesh.vertices = o3d.utility.Vector3dVector(self.vertices)
         mesh.triangles = o3d.utility.Vector3iVector(self.triangles)
 
         while len(mesh.vertices) < target_vertex_num:
