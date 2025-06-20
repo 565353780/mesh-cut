@@ -62,7 +62,7 @@ class MeshGraphCutter(object):
         mesh = o3d.io.read_triangle_mesh(mesh_file_path)
 
         self.vertices = np.asarray(mesh.vertices, dtype=np.float64)
-        self.triangles = np.asarray(mesh.triangles, dtype=np.int64)
+        self.triangles = np.asarray(mesh.triangles, dtype=np.int32)
 
         mesh.compute_vertex_normals()
         self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
@@ -80,7 +80,7 @@ class MeshGraphCutter(object):
             mesh = mesh.subdivide_loop(number_of_iterations=1)
 
         self.vertices = np.asarray(mesh.vertices, dtype=np.float64)
-        self.triangles = np.asarray(mesh.triangles, dtype=np.int64)
+        self.triangles = np.asarray(mesh.triangles, dtype=int)
 
         mesh.compute_vertex_normals()
         self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
