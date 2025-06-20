@@ -68,16 +68,6 @@ class MeshGraphCutter(object):
         self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
         return True
 
-    def estimateCurvatures(self) -> bool:
-        if not self.mesh_curvature.loadMesh(self.vertices, self.triangles, "cpu"):
-            print("[ERROR][MeshGraphCutter::estimateCurvatures]")
-            print("\t loadMesh failed for mesh_curvature!")
-            return False
-
-        self.vertex_curvatures = self.mesh_curvature.toMeanV().cpu().numpy()
-        self.face_curvatures = self.mesh_curvature.toMeanF().cpu().numpy()
-        return True
-
     def subDivMesh(self, target_vertex_num: int) -> bool:
         if self.vertices.shape[0] >= target_vertex_num:
             return True
@@ -96,15 +86,27 @@ class MeshGraphCutter(object):
         self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
         return True
 
+    def estimateCurvatures(self) -> bool:
+        if not self.mesh_curvature.loadMesh(self.vertices, self.triangles, "cpu"):
+            print("[ERROR][MeshGraphCutter::estimateCurvatures]")
+            print("\t loadMesh failed for mesh_curvature!")
+            return False
+
+        self.vertex_curvatures = self.mesh_curvature.toMeanV().cpu().numpy()
+        self.face_curvatures = self.mesh_curvature.toMeanF().cpu().numpy()
+        return True
+
     def cutMesh(
         self, sub_mesh_num: int = 400, points_per_submesh: int = 8192
     ) -> Union[list, bool]:
+        self.subDivMesh(sub_mesh_num)
+
+        self.estimateCurvatures()
+
         if not self.isValid():
             print("[ERROR][MeshGraphCutter::cutMesh]")
             print("\t mesh is not valid!")
             return False
-
-        self.subDivMesh(sub_mesh_num)
 
         self.fps_vertex_idxs = farthest_point_sampling(self.vertices, sub_mesh_num)
 
