@@ -10,10 +10,13 @@ SYSTEM = system()
 cut_root_path = os.getcwd() + "/mesh_graph_cut/Cpp/"
 cut_lib_path = os.getcwd() + "/mesh_graph_cut/Lib/"
 cut_src_path = cut_root_path + "src/"
-cut_sources = glob.glob(cut_src_path + "*.cpp")
+cut_sources = glob.glob(cut_src_path + "*.cpp") + glob.glob(
+    cut_lib_path + "mio/source/*.c"
+)
 cut_include_dirs = [
     cut_root_path + "include",
     cut_lib_path + "mcut/include",
+    cut_lib_path + "mio/include",
 ]
 
 cut_library_dirs = [os.path.abspath(cut_lib_path + "mcut/build/bin")]

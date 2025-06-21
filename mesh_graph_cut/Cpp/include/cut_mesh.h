@@ -1,7 +1,6 @@
 #pragma once
 
-#include <torch/extension.h>
+#include <string>
 
-void cutMesh(const torch::Tensor &vertices, const torch::Tensor &triangles,
-             const torch::Tensor &cut_vertices,
-             const torch::Tensor &cut_triangles);
+void cutMesh(const std::string &mesh_file_path,
+             const std::string &cut_mesh_file_path);

@@ -4,6 +4,7 @@ build
 *.egg-info
 .DS_Store
 *.so
+.cache
 
 # output
 output
