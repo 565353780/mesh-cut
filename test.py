@@ -10,6 +10,16 @@ from mesh_graph_cut.Method.path import createFileFolder
 from mesh_graph_cut.Method.render import createRandomColors
 
 
+def toValidMesh(mesh_file_path: str, save_mesh_file_path: str) -> bool:
+    mesh = o3d.io.read_triangle_mesh(mesh_file_path)
+
+    mesh.remove_non_manifold_edges()
+
+    createFileFolder(save_mesh_file_path)
+    o3d.io.write_triangle_mesh(save_mesh_file_path, mesh, write_ascii=True)
+    return True
+
+
 def toCentersAndRadius(
     mesh_file_path: str, center_num: int, cover_point_num: int
 ) -> Tuple[np.ndarray, float]:
@@ -45,12 +55,14 @@ def toCentersAndRadius(
 # 示例用法
 if __name__ == "__main__":
     mesh_file_path = "/Users/chli/chLi/Dataset/Objaverse_82K/trimesh/000-000/000a00944e294f7a94f95d420fdd45eb.obj"
+    valid_mesh_file_path = "./output/valid_mesh.obj"
     anchor_num = 400
     cover_point_num = 10000
     sample_point_num = 1024
 
-    # 加载网格
-    mesh = o3d.io.read_triangle_mesh(mesh_file_path)
+    toValidMesh(mesh_file_path, valid_mesh_file_path)
+
+    mesh = o3d.io.read_triangle_mesh(valid_mesh_file_path)
 
     region_centers, radius = toCentersAndRadius(
         mesh_file_path, anchor_num, cover_point_num
@@ -63,6 +75,6 @@ if __name__ == "__main__":
     createFileFolder(test_sphere_file_path)
     o3d.io.write_triangle_mesh(test_sphere_file_path, sphere, write_ascii=True)
 
-    cut_cpp.cutMesh(mesh_file_path, test_sphere_file_path)
+    cut_cpp.cutMesh(valid_mesh_file_path, test_sphere_file_path)
 
     print("finish!")
