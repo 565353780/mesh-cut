@@ -1,9 +1,9 @@
+#include "cut_mesh.h"
+#include "region_growing.h"
+#include "sample.h"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-
-#include "region_growing.h"
-#include "sample.h"
 
 namespace py = pybind11;
 
@@ -47,4 +47,6 @@ PYBIND11_MODULE(mesh_graph_cut_cpp, m) {
         "Returns:\n"
         "    (K, 8192, 3) float array of sampled points for each submesh, "
         "where K is the number of face groups");
+
+  m.def("cutMesh", &cutMesh, "cut_mesh.cutMesh");
 }
