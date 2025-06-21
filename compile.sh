@@ -11,11 +11,20 @@ export CXX=$(which g++)
 echo "Using CC: $CC"
 echo "Using CXX: $CXX"
 
+cd ./mesh_graph_cut/Lib/mcut/
+rm -rf build
+mkdir build
+cd build
+cmake ..
+make -j
+
+cd ../../../../
+
 pip uninstall cut-cpp -y
 
-rm -rf ../mesh-graph-cut/build
-rm -rf ../mesh-graph-cut/*.egg-info
-rm ../mesh-graph-cut/*.so
+rm -rf build
+rm -rf *.egg-info
+rm *.so
 
 # bear -- python setup.py build_ext --inplace
 python setup.py build_ext --inplace
