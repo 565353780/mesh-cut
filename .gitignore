@@ -3,6 +3,7 @@ __pycache__
 build
 *.egg-info
 .DS_Store
+*.so
 
 # output
 output

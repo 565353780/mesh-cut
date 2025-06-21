@@ -11,14 +11,16 @@ export CXX=$(which g++)
 echo "Using CC: $CC"
 echo "Using CXX: $CXX"
 
-cd ./mesh_graph_cut/Lib/mcut/
-rm -rf build
-mkdir build
-cd build
-cmake ..
-make -j
+if [ ! -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.so" ]; then
+  cd ./mesh_graph_cut/Lib/mcut/
+  rm -rf build
+  mkdir build
+  cd build
+  cmake ..
+  make -j
 
-cd ../../../../
+  cd ../../../../
+fi
 
 pip uninstall cut-cpp -y
 

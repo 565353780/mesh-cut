@@ -13,9 +13,11 @@ cut_src_path = cut_root_path + "src/"
 cut_sources = glob.glob(cut_src_path + "*.cpp")
 cut_include_dirs = [
     cut_root_path + "include",
-    cut_lib_path + "eigen",
-    cut_lib_path + "libigl/include",
+    cut_lib_path + "mcut/include",
 ]
+
+cut_library_dirs = [os.path.abspath(cut_lib_path + "mcut/build/bin")]
+cut_libraries = ["mcut"]
 
 cut_extra_compile_args = [
     "-O3",
@@ -77,6 +79,9 @@ if torch.cuda.is_available():
         name="cut_cpp",
         sources=cut_sources,
         include_dirs=cut_include_dirs,
+        library_dirs=cut_library_dirs,
+        libraries=cut_libraries,
+        runtime_library_dirs=cut_library_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=link_args,
     )
@@ -86,6 +91,9 @@ else:
         name="cut_cpp",
         sources=cut_sources,
         include_dirs=cut_include_dirs,
+        library_dirs=cut_library_dirs,
+        libraries=cut_libraries,
+        runtime_library_dirs=cut_library_dirs,
         extra_compile_args=cut_extra_compile_args,
         extra_link_args=link_args,
     )
