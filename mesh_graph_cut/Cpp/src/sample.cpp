@@ -14,16 +14,18 @@ inline float compute_distance_squared(const float *p1, const float *p2,
   return dist;
 }
 
-std::vector<int> farthest_point_sampling(py::array_t<float> points,
-                                         int sample_point_num) {
-  auto points_buf = points.request();
-  if (points_buf.ndim != 2) {
-    throw std::runtime_error("Input points must be a 2D array");
+torch::Tensor farthest_point_sampling(torch::Tensor points,
+                                      int sample_point_num) {
+  // 检查输入张量的维度
+  if (points.dim() != 2) {
+    throw std::runtime_error("Input points must be a 2D tensor");
   }
 
-  const int num_points = points_buf.shape[0];
-  const int dim = points_buf.shape[1];
-  const float *points_ptr = static_cast<float *>(points_buf.ptr);
+  const int num_points = points.size(0);
+  const int dim = points.size(1);
+
+  // 获取指向数据的指针
+  const float *points_ptr = points.data_ptr<float>();
 
   if (sample_point_num > num_points) {
     throw std::runtime_error(
@@ -89,7 +91,12 @@ std::vector<int> farthest_point_sampling(py::array_t<float> points,
     */
   }
 
-  return sampled_indices;
+  // 将结果转换为torch::Tensor
+  auto options = torch::TensorOptions().dtype(torch::kInt32);
+  torch::Tensor result =
+      torch::from_blob(sampled_indices.data(), {sample_point_num}, options)
+          .clone();
+  return result;
 }
 
 // 计算三角形面积
@@ -146,30 +153,27 @@ inline void sample_triangle_uniform(const float *v0, const float *v1,
   }
 }
 
-py::array_t<float>
-toSubMeshSamplePoints(py::array_t<float> vertices, py::array_t<int> triangles,
+torch::Tensor
+toSubMeshSamplePoints(torch::Tensor vertices, torch::Tensor triangles,
                       const std::vector<std::vector<size_t>> &face_groups,
                       const int &points_per_submesh) {
-  // 获取输入数组的信息
-  auto vertices_buf = vertices.request();
-  auto triangles_buf = triangles.request();
-
-  if (vertices_buf.ndim != 2 || triangles_buf.ndim != 2) {
-    throw std::runtime_error("Input arrays have incorrect dimensions");
+  // 检查输入张量的维度
+  if (vertices.dim() != 2 || triangles.dim() != 2) {
+    throw std::runtime_error("Input tensors have incorrect dimensions");
   }
 
-  const int num_vertices = vertices_buf.shape[0];
-  const int dim = vertices_buf.shape[1];
-  const float *vertices_ptr = static_cast<float *>(vertices_buf.ptr);
-  const int *triangles_ptr = static_cast<int *>(triangles_buf.ptr);
+  const int num_vertices = vertices.size(0);
+  const int dim = vertices.size(1);
+  const float *vertices_ptr = vertices.data_ptr<float>();
+  const int *triangles_ptr = triangles.data_ptr<int>();
 
   const int NUM_SUBMESHES = face_groups.size();
 
-  // 创建结果数组
-  std::vector<size_t> result_shape = {NUM_SUBMESHES, points_per_submesh, dim};
-  py::array_t<float> result(result_shape);
-  auto result_buf = result.request();
-  float *result_ptr = static_cast<float *>(result_buf.ptr);
+  // 创建结果张量
+  auto options = torch::TensorOptions().dtype(torch::kFloat32);
+  torch::Tensor result =
+      torch::zeros({NUM_SUBMESHES, points_per_submesh, dim}, options);
+  float *result_ptr = result.data_ptr<float>();
 
   std::cout << "[INFO][sample::toSubMeshSamplePoints]" << std::endl;
   std::cout << "\t start uniform sampling on submeshes..." << std::endl;
