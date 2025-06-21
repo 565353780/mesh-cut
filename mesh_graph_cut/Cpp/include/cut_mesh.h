@@ -1,8 +1,7 @@
 #pragma once
 
-#include <vector>
+#include <torch/extension.h>
 
-void cutMesh(const std::vector<float> &vertices,
-             const std::vector<int> &triangles,
-             const std::vector<float> &cut_vertices,
-             const std::vector<int> &cut_triangles);
+void cutMesh(const torch::Tensor &vertices, const torch::Tensor &triangles,
+             const torch::Tensor &cut_vertices,
+             const torch::Tensor &cut_triangles);

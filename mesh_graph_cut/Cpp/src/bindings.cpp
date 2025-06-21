@@ -13,7 +13,7 @@ toSubMeshSamplePoints(py::array_t<float> vertices, py::array_t<int> triangles,
                       const std::vector<std::vector<size_t>> &face_groups,
                       const int &points_per_submesh);
 
-PYBIND11_MODULE(mesh_graph_cut_cpp, m) {
+PYBIND11_MODULE(cut_cpp, m) {
   m.doc() = "C++ implementation of mesh graph cut algorithm"; // optional module
                                                               // docstring
 

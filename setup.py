@@ -1,25 +1,37 @@
-from setuptools import setup, Extension, find_packages
-from setuptools.command.build_ext import build_ext
-import sys
 import os
-import platform
+import glob
+import torch
+from platform import system
+from setuptools import find_packages, setup
+from torch.utils.cpp_extension import CUDAExtension, CppExtension, BuildExtension
 
-# 检测操作系统类型
-is_mac = platform.system() == "Darwin"
-is_linux = platform.system() == "Linux"
-is_windows = platform.system() == "Windows"
+SYSTEM = system()
 
-# 设置编译器标志
-compile_args = []
+cut_root_path = os.getcwd() + "/mesh_graph_cut/Cpp/"
+cut_lib_path = os.getcwd() + "/mesh_graph_cut/Lib/"
+cut_src_path = cut_root_path + "src/"
+cut_sources = glob.glob(cut_src_path + "*.cpp")
+cut_include_dirs = [
+    cut_root_path + "include",
+    cut_lib_path + "eigen",
+    cut_lib_path + "libigl/include",
+]
+
+cut_extra_compile_args = [
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-fPIC",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-D_GLIBCXX_USE_CXX11_ABI=0",
+    "-DTORCH_USE_CUDA_DSA",
+]
+
 link_args = []
 
-if is_mac:
-    compile_args += [
-        "-std=c++14",
-        "-O3",
-        "-Wall",
-        "-Wextra",
-        "-fPIC",
+if SYSTEM == "Darwin":
+    cut_extra_compile_args.append("-std=c++17")
+    cut_extra_compile_args += [
         "-Wno-unused-function",
         "-Wno-unused-parameter",
         "-stdlib=libc++",
@@ -31,94 +43,59 @@ if is_mac:
         "-mmacosx-version-min=10.14",
         "-lomp",  # macOS需要链接libomp
     ]
-elif is_linux:
-    compile_args += [
-        "-std=c++14",
-        "-O3",
-        "-Wall",
-        "-Wextra",
-        "-fPIC",
+elif SYSTEM == "Linux":
+    cut_extra_compile_args.append("-std=c++17")
+    cut_extra_compile_args += [
         "-fopenmp",
     ]
     link_args += ["-fopenmp"]
-elif is_windows:
-    compile_args += ["/O2", "/Wall", "/std:c++14", "/openmp"]
 
+if torch.cuda.is_available():
+    cc = torch.cuda.get_device_capability()
+    arch_str = f"{cc[0]}.{cc[1]}"
+    os.environ["TORCH_CUDA_ARCH_LIST"] = arch_str
 
-# 定义pybind11的路径
-class get_pybind_include(object):
-    def __init__(self, user=False):
-        self.user = user
+    cut_sources += glob.glob(cut_src_path + "*.cu")
 
-    def __str__(self):
-        import pybind11
-
-        return pybind11.get_include(self.user)
-
-
-# 定义扩展模块
-ext_modules = [
-    Extension(
-        "mesh_graph_cut_cpp",
-        [
-            "mesh_graph_cut/Cpp/src/bindings.cpp",
-            "mesh_graph_cut/Cpp/src/region_growing.cpp",
-            "mesh_graph_cut/Cpp/src/sample.cpp",
+    extra_compile_args = {
+        "cxx": cut_extra_compile_args
+        + [
+            "-DUSE_CUDA",
+            "-DTORCH_USE_CUDA_DSA",
         ],
-        include_dirs=[
-            # 包含目录
-            "mesh_graph_cut/Cpp/include",
-            get_pybind_include(),
-            get_pybind_include(user=True),
-            # 添加Eigen库的包含路径
-            "/usr/local/include/eigen3",
-            "/usr/include/eigen3",
+        "nvcc": [
+            "-O3",
+            "-Xfatbin",
+            "-compress-all",
+            "-DUSE_CUDA",
+            "-std=c++17",
+            "-DTORCH_USE_CUDA_DSA",
         ],
-        extra_compile_args=compile_args,
+    }
+
+    cut_module = CUDAExtension(
+        name="cut_cpp",
+        sources=cut_sources,
+        include_dirs=cut_include_dirs,
+        extra_compile_args=extra_compile_args,
         extra_link_args=link_args,
-        language="c++",
-    ),
-]
+    )
 
-
-# 自定义构建扩展命令
-class BuildExt(build_ext):
-    def build_extensions(self):
-        # 检查编译器是否支持C++14
-        if is_windows:
-            if self.compiler.compiler_type == "msvc":
-                # 使用MSVC编译器
-                for ext in self.extensions:
-                    ext.extra_compile_args = ["/O2", "/Wall", "/std:c++14"]
-        else:
-            # 使用GCC或Clang编译器
-            try:
-                self.compiler.compiler_so.remove("-Wstrict-prototypes")
-            except (AttributeError, ValueError):
-                pass
-        build_ext.build_extensions(self)
-
+else:
+    cut_module = CppExtension(
+        name="cut_cpp",
+        sources=cut_sources,
+        include_dirs=cut_include_dirs,
+        extra_compile_args=cut_extra_compile_args,
+        extra_link_args=link_args,
+    )
 
 setup(
-    name="mesh_graph_cut_cpp",
-    version="0.1.0",
-    author="chli",
-    author_email="chli@example.com",
-    description="A fast mesh graph cutting library with C++ backend",
-    long_description="",
+    name="CUT-CPP",
+    version="1.0.0",
+    author="Changhao Li",
     packages=find_packages(),
-    ext_modules=ext_modules,
-    cmdclass={"build_ext": BuildExt},
-    install_requires=[
-        "numpy>=1.19.0",
-        "scipy>=1.5.0",
-        "open3d>=0.13.0",
-        "matplotlib>=3.3.0",
-        "tqdm>=4.48.0",
-        "joblib>=0.16.0",
-        "tqdm-joblib>=0.0.1",
-        "pybind11>=2.6.0",
-    ],
-    zip_safe=False,
+    ext_modules=[cut_module],
+    cmdclass={"build_ext": BuildExtension},
+    include_package_data=True,
 )
-

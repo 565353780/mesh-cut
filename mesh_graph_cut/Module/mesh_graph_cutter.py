@@ -4,7 +4,7 @@ import numpy as np
 import open3d as o3d
 from typing import Union
 
-from mesh_graph_cut_cpp import (
+from cut_cpp import (
     farthest_point_sampling,
     run_parallel_region_growing,
     toSubMeshSamplePoints,
@@ -77,13 +77,15 @@ class MeshGraphCutter(object):
         mesh.triangles = o3d.utility.Vector3iVector(self.triangles)
 
         while len(mesh.vertices) < target_vertex_num:
-            mesh = mesh.subdivide_loop(number_of_iterations=1)
+            mesh = mesh.subdivide_midpoint(number_of_iterations=1)
 
         self.vertices = np.asarray(mesh.vertices, dtype=np.float64)
         self.triangles = np.asarray(mesh.triangles, dtype=int)
 
         mesh.compute_vertex_normals()
         self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
+
+        o3d.io.write_triangle_mesh("../ma-sh/output/subdiv.ply", mesh)
         return True
 
     def estimateCurvatures(self) -> bool:
@@ -99,7 +101,7 @@ class MeshGraphCutter(object):
     def cutMesh(
         self, sub_mesh_num: int = 400, points_per_submesh: int = 8192
     ) -> Union[list, bool]:
-        self.subDivMesh(sub_mesh_num)
+        self.subDivMesh(10 * sub_mesh_num)
 
         self.estimateCurvatures()
 
