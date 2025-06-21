@@ -11,7 +11,19 @@ export CXX=$(which g++)
 echo "Using CC: $CC"
 echo "Using CXX: $CXX"
 
-if [ ! -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.so" ]; then
+COMPILE_MCUT=false
+if [ "$(uname)" = "Darwin" ]; then
+  if [ ! -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.dylib" ]; then
+    COMPILE_MCUT=true
+  fi
+fi
+if [ "$(uname)" = "Linux" ]; then
+  if [ ! -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.so" ]; then
+    COMPILE_MCUT=true
+  fi
+fi
+
+if [ $COMPILE_MCUT = true ]; then
   cd ./mesh_graph_cut/Lib/mcut/
   rm -rf build
   mkdir build

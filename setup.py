@@ -21,9 +21,6 @@ cut_libraries = ["mcut"]
 
 cut_extra_compile_args = [
     "-O3",
-    "-Wall",
-    "-Wextra",
-    "-fPIC",
     "-DCMAKE_BUILD_TYPE=Release",
     "-D_GLIBCXX_USE_CXX11_ABI=0",
     "-DTORCH_USE_CUDA_DSA",
@@ -33,24 +30,8 @@ link_args = []
 
 if SYSTEM == "Darwin":
     cut_extra_compile_args.append("-std=c++17")
-    cut_extra_compile_args += [
-        "-Wno-unused-function",
-        "-Wno-unused-parameter",
-        "-stdlib=libc++",
-        "-mmacosx-version-min=10.14",
-        "-fopenmp",
-    ]
-    link_args += [
-        "-stdlib=libc++",
-        "-mmacosx-version-min=10.14",
-        "-lomp",  # macOS需要链接libomp
-    ]
 elif SYSTEM == "Linux":
     cut_extra_compile_args.append("-std=c++17")
-    cut_extra_compile_args += [
-        "-fopenmp",
-    ]
-    link_args += ["-fopenmp"]
 
 if torch.cuda.is_available():
     cc = torch.cuda.get_device_capability()
