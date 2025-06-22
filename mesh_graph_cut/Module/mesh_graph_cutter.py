@@ -94,8 +94,8 @@ class MeshGraphCutter(object):
             print("\t loadMesh failed for mesh_curvature!")
             return False
 
-        self.vertex_curvatures = self.mesh_curvature.toMeanV().cpu().numpy()
-        self.face_curvatures = self.mesh_curvature.toMeanF().cpu().numpy()
+        self.vertex_curvatures = self.mesh_curvature.toMeanV()
+        self.face_curvatures = self.mesh_curvature.toMeanF()
         return True
 
     def cutMesh(
@@ -131,12 +131,14 @@ class MeshGraphCutter(object):
 
     def visualizeCurvature(self) -> bool:
         if not self.isValid():
+            self.estimateCurvatures()
+
+        if not self.isValid():
             print("[ERROR][MeshGraphCutter::visualizeCurvature]")
             print("\t mesh is not valid!")
             return False
 
         curvature_vis = 1.0 - toVisiableVertexCurvature(self.vertex_curvatures)
-        curvature_vis = torch.from_numpy(curvature_vis).float()
 
         self.mesh_curvature.render(curvature_vis)
         return True
