@@ -110,14 +110,22 @@ class MeshGraphCutter(object):
             print("\t mesh is not valid!")
             return False
 
-        self.fps_vertex_idxs = farthest_point_sampling(self.vertices, sub_mesh_num)
+        self.fps_vertex_idxs = farthest_point_sampling(
+            torch.from_numpy(self.vertices).to(torch.float32), sub_mesh_num
+        )
 
         self.face_labels = run_parallel_region_growing(
-            self.vertices, self.triangles, self.fps_vertex_idxs, sub_mesh_num
+            self.vertices,
+            self.triangles,
+            self.fps_vertex_idxs.numpy(),
+            sub_mesh_num,
         )
 
         self.sub_mesh_sample_points = toSubMeshSamplePoints(
-            self.vertices, self.triangles, self.face_labels, points_per_submesh
+            torch.from_numpy(self.vertices).to(torch.float32),
+            torch.from_numpy(self.triangles).to(torch.int),
+            self.face_labels,
+            points_per_submesh,
         )
         return True
 

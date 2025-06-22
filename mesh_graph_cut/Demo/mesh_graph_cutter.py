@@ -17,8 +17,8 @@ def demo():
         os.makedirs(output_dir)
 
     # 设置分割参数
-    sub_mesh_num = 4000
-    points_per_submesh = 8192
+    sub_mesh_num = 400
+    points_per_submesh = 1024
 
     print("Loading mesh from", mesh_file_path)
     mesh_graph_cutter = MeshGraphCutter(mesh_file_path)
@@ -41,7 +41,7 @@ def demo():
     print("Render face labels...")
     mesh_graph_cutter.renderFaceLabels()
 
-    print("Render sub meshes...")
-    mesh_graph_cutter.renderSubMeshSamplePoints()
+    # print("Render sub meshes...")
+    # mesh_graph_cutter.renderSubMeshSamplePoints()
 
     return True

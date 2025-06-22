@@ -1,15 +1,6 @@
 import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
-from numba import jit, prange
-
-
-@jit(nopython=True, parallel=True)
-def flatten_points(arr, out):
-    for i in prange(arr.shape[0]):
-        for j in range(arr.shape[1]):
-            out[i * arr.shape[1] + j] = arr[i, j]
-    return out
 
 
 def createRandomColors(color_map, color_num: int) -> np.ndarray:
@@ -58,8 +49,7 @@ def renderSubMeshSamplePoints(sub_mesh_sample_points: np.ndarray) -> bool:
     pcd = o3d.geometry.PointCloud()
 
     print("start create pcd points...")
-    points = np.empty((color_num * point_num, 3), dtype=np.float64)
-    flatten_points(sub_mesh_sample_points, points)
+    points = sub_mesh_sample_points.reshape(-1, 3)
     pcd.points = o3d.utility.Vector3dVector(points)
 
     print("start create pcd colors...")
