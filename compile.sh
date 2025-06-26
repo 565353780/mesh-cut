@@ -11,15 +11,15 @@ export CXX=$(which g++)
 echo "Using CC: $CC"
 echo "Using CXX: $CXX"
 
-COMPILE_MCUT=false
+COMPILE_MCUT=true
 if [ "$(uname)" = "Darwin" ]; then
-  if [ ! -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.dylib" ]; then
-    COMPILE_MCUT=true
+  if [ -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.dylib" ]; then
+    COMPILE_MCUT=false
   fi
 fi
 if [ "$(uname)" = "Linux" ]; then
-  if [ ! -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.so" ]; then
-    COMPILE_MCUT=true
+  if [ -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.so" ]; then
+    COMPILE_MCUT=false
   fi
 fi
 
@@ -40,8 +40,8 @@ rm -rf build
 rm -rf *.egg-info
 rm *.so
 
-bear -- python setup.py build_ext --inplace
-# python setup.py build_ext --inplace
+# bear -- python setup.py build_ext --inplace
+python setup.py build_ext --inplace
 mv compile_commands.json build
 
 pip install .
