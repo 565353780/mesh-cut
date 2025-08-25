@@ -1,10 +1,11 @@
 import sys
 
+sys.path.append("../mesh-cut")
 sys.path.append("../diff-curvature")
 
 import os
 import time
-from mesh_cut.Module.mesh_graph_cutter import MeshGraphCutter
+from mesh_cut.Module.mesh_cutter import MeshCutter
 
 
 def demo():
@@ -21,27 +22,25 @@ def demo():
     points_per_submesh = 1024
 
     print("Loading mesh from", mesh_file_path)
-    mesh_graph_cutter = MeshGraphCutter(mesh_file_path)
+    mesh_cutter = MeshCutter(mesh_file_path)
 
     # 可视化原始网格的曲率
     # print("Visualizing mesh curvature...")
-    # mesh_graph_cutter.visualizeCurvature()
+    # mesh_cutter.visualizeCurvature()
 
     # 执行网格切割
     print(f"Cutting mesh into {sub_mesh_num} segments...")
     start_time = time.time()
-    mesh_graph_cutter.cutMesh(sub_mesh_num, points_per_submesh)
+    mesh_cutter.cutMesh(sub_mesh_num, points_per_submesh)
     end_time = time.time()
     print(f"Mesh cutting completed in {end_time - start_time:.2f} seconds")
 
-    print(
-        "sub mesh sample points.shape:", mesh_graph_cutter.sub_mesh_sample_points.shape
-    )
+    print("sub mesh sample points.shape:", mesh_cutter.sub_mesh_sample_points.shape)
 
     print("Render face labels...")
-    mesh_graph_cutter.renderFaceLabels()
+    mesh_cutter.renderFaceLabels()
 
     # print("Render sub meshes...")
-    # mesh_graph_cutter.renderSubMeshSamplePoints()
+    # mesh_cutter.renderSubMeshSamplePoints()
 
     return True

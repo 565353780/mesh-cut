@@ -16,7 +16,7 @@ from mesh_cut.Method.curvature import toVisiableVertexCurvature
 from mesh_cut.Method.render import renderFaceLabels, renderSubMeshSamplePoints
 
 
-class MeshGraphCutter(object):
+class MeshCutter(object):
     def __init__(self, mesh_file_path: Union[str, None] = None):
         self.mesh_curvature = MeshCurvature()
 
@@ -54,7 +54,7 @@ class MeshGraphCutter(object):
 
     def loadMesh(self, mesh_file_path: str) -> bool:
         if not os.path.exists(mesh_file_path):
-            print("[ERROR][MeshGraphCutter::loadMesh]")
+            print("[ERROR][MeshCutter::loadMesh]")
             print("\t mesh file not exist!")
             print("\t mesh_file_path: ", mesh_file_path)
             return False
@@ -90,7 +90,7 @@ class MeshGraphCutter(object):
 
     def estimateCurvatures(self) -> bool:
         if not self.mesh_curvature.loadMesh(self.vertices, self.triangles, "cpu"):
-            print("[ERROR][MeshGraphCutter::estimateCurvatures]")
+            print("[ERROR][MeshCutter::estimateCurvatures]")
             print("\t loadMesh failed for mesh_curvature!")
             return False
 
@@ -106,7 +106,7 @@ class MeshGraphCutter(object):
         self.estimateCurvatures()
 
         if not self.isValid():
-            print("[ERROR][MeshGraphCutter::cutMesh]")
+            print("[ERROR][MeshCutter::cutMesh]")
             print("\t mesh is not valid!")
             return False
 
@@ -134,7 +134,7 @@ class MeshGraphCutter(object):
             self.estimateCurvatures()
 
         if not self.isValid():
-            print("[ERROR][MeshGraphCutter::visualizeCurvature]")
+            print("[ERROR][MeshCutter::visualizeCurvature]")
             print("\t mesh is not valid!")
             return False
 
