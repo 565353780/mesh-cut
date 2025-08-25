@@ -12,8 +12,8 @@ from cut_cpp import (
 
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
-from mesh_graph_cut.Method.curvature import toVisiableVertexCurvature
-from mesh_graph_cut.Method.render import renderFaceLabels, renderSubMeshSamplePoints
+from mesh_cut.Method.curvature import toVisiableVertexCurvature
+from mesh_cut.Method.render import renderFaceLabels, renderSubMeshSamplePoints
 
 
 class MeshGraphCutter(object):
@@ -68,7 +68,7 @@ class MeshGraphCutter(object):
         self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
         return True
 
-    def subDivMesh(self, target_vertex_num: int) -> bool:
+    def subdivMesh(self, target_vertex_num: int) -> bool:
         if self.vertices.shape[0] >= target_vertex_num:
             return True
 
@@ -101,7 +101,7 @@ class MeshGraphCutter(object):
     def cutMesh(
         self, sub_mesh_num: int = 400, points_per_submesh: int = 8192
     ) -> Union[list, bool]:
-        self.subDivMesh(10 * sub_mesh_num)
+        self.subdivMesh(10 * sub_mesh_num)
 
         self.estimateCurvatures()
 

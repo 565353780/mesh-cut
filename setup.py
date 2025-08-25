@@ -7,8 +7,8 @@ from torch.utils.cpp_extension import CUDAExtension, CppExtension, BuildExtensio
 
 SYSTEM = system()
 
-cut_root_path = os.getcwd() + "/mesh_graph_cut/Cpp/"
-cut_lib_path = os.getcwd() + "/mesh_graph_cut/Lib/"
+cut_root_path = os.getcwd() + "/mesh_cut/Cpp/"
+cut_lib_path = os.getcwd() + "/mesh_cut/Lib/"
 cut_src_path = cut_root_path + "src/"
 cut_sources = glob.glob(cut_src_path + "*.cpp") + glob.glob(
     cut_lib_path + "mio/source/*.c"

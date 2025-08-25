@@ -13,18 +13,18 @@ echo "Using CXX: $CXX"
 
 COMPILE_MCUT=true
 if [ "$(uname)" = "Darwin" ]; then
-  if [ -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.dylib" ]; then
+  if [ -f "./mesh_cut/Lib/mcut/build/bin/libmcut.dylib" ]; then
     COMPILE_MCUT=false
   fi
 fi
 if [ "$(uname)" = "Linux" ]; then
-  if [ -f "./mesh_graph_cut/Lib/mcut/build/bin/libmcut.so" ]; then
+  if [ -f "./mesh_cut/Lib/mcut/build/bin/libmcut.so" ]; then
     COMPILE_MCUT=false
   fi
 fi
 
 if [ $COMPILE_MCUT = true ]; then
-  cd ./mesh_graph_cut/Lib/mcut/
+  cd ./mesh_cut/Lib/mcut/
   rm -rf build
   mkdir build
   cd build

@@ -1,10 +1,10 @@
-# Mesh Graph Cut
+# Mesh Cut
 
 ## Setup
 
 ```bash
-conda create -n gc python=3.10
-conda activate gc
+conda create -n mc python=3.10
+conda activate mc
 ./setup.sh
 ```
 
@@ -15,4 +15,3 @@ python demo.py
 ```
 
 ## Enjoy it~
-

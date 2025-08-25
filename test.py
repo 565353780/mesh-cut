@@ -6,8 +6,8 @@ from typing import Tuple
 
 import cut_cpp
 
-from mesh_graph_cut.Method.path import createFileFolder
-from mesh_graph_cut.Method.render import createRandomColors
+from mesh_cut.Method.path import createFileFolder
+from mesh_cut.Method.render import createRandomColors
 
 
 def toValidMesh(mesh_file_path: str, save_mesh_file_path: str) -> bool:
