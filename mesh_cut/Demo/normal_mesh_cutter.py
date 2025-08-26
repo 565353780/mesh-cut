@@ -5,7 +5,7 @@ sys.path.append("../diff-curvature")
 
 import os
 import time
-from mesh_cut.Module.mesh_cutter import MeshCutter
+from mesh_cut.Module.normal_mesh_cutter import NormalMeshCutter
 
 
 def demo():
@@ -22,7 +22,7 @@ def demo():
     points_per_submesh = 1024
 
     print("Loading mesh from", mesh_file_path)
-    mesh_cutter = MeshCutter(mesh_file_path)
+    mesh_cutter = NormalMeshCutter(mesh_file_path)
 
     # 可视化原始网格的曲率
     # print("Visualizing mesh curvature...")

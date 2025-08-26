@@ -16,7 +16,7 @@ from mesh_cut.Method.curvature import toVisiableVertexCurvature
 from mesh_cut.Method.render import renderFaceLabels, renderSubMeshSamplePoints
 
 
-class MeshCutter(object):
+class NormalMeshCutter(object):
     def __init__(self, mesh_file_path: Union[str, None] = None):
         self.mesh_curvature = MeshCurvature()
 
