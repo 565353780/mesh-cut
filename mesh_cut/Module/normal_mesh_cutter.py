@@ -68,13 +68,18 @@ class NormalMeshCutter(object):
         self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
         return True
 
+    def toO3DMesh(self) -> o3d.geometry.TriangleMesh:
+        mesh = o3d.geometry.TriangleMesh()
+        mesh.vertices = o3d.utility.Vector3dVector(self.vertices)
+        mesh.triangles = o3d.utility.Vector3iVector(self.triangles)
+
+        return mesh
+
     def subdivMesh(self, target_vertex_num: int) -> bool:
         if self.vertices.shape[0] >= target_vertex_num:
             return True
 
-        mesh = o3d.geometry.TriangleMesh()
-        mesh.vertices = o3d.utility.Vector3dVector(self.vertices)
-        mesh.triangles = o3d.utility.Vector3iVector(self.triangles)
+        mesh = self.toO3DMesh()
 
         while len(mesh.vertices) < target_vertex_num:
             mesh = mesh.subdivide_midpoint(number_of_iterations=1)
