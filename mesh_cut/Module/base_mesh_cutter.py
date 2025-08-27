@@ -56,8 +56,11 @@ class BaseMeshCutter(object):
 
         mesh = o3d.io.read_triangle_mesh(mesh_file_path)
 
-        mesh_subdiver = MeshSubdiver(mesh, dist_max)
-        subdiv_mesh = mesh_subdiver.createSubdivMesh()
+        if dist_max == float("inf"):
+            subdiv_mesh = mesh
+        else:
+            mesh_subdiver = MeshSubdiver(mesh, dist_max)
+            subdiv_mesh = mesh_subdiver.createSubdivMesh()
 
         self.vertices = np.asarray(subdiv_mesh.vertices, dtype=np.float64)
         self.triangles = np.asarray(subdiv_mesh.triangles, dtype=np.int32)

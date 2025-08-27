@@ -142,6 +142,9 @@ class NormalMeshCutter(BaseMeshCutter):
         while queue:
             current_face_idx = queue.popleft()
             for neighbor_face_idx in self.face_adjacency_list[current_face_idx]:
+                if self.face_labels[neighbor_face_idx] != -1:
+                    continue
+
                 if neighbor_face_idx in visited:
                     continue
 
@@ -181,15 +184,7 @@ class NormalMeshCutter(BaseMeshCutter):
 
             self.face_labels[new_region] = new_face_label
 
-        new_face_labels = []
-        for i in range(np.max(self.face_labels) + 1):
-            curr_face_idxs = np.where(self.face_labels == i)[0]
-            if curr_face_idxs.shape[0] == 0:
-                continue
-
-            new_face_labels.append(curr_face_idxs)
-
-        self.face_labels = new_face_labels
+            self.renderFaceLabels()
 
         """
         self.sub_mesh_sample_points = toSubMeshSamplePoints(

@@ -5,12 +5,21 @@ from typing import Union
 
 
 def createRandomColors(color_num: int, color_map_id: str = "tab20") -> np.ndarray:
-    return np.random.rand(color_num, 3)
-    color_map = plt.get_cmap(color_map_id)
+    mode = "fixed-random"
 
-    return np.array(
-        [color_map(i % len(color_map.colors))[:3] for i in range(color_num)]
-    )
+    if mode == "fixed-random":
+        rng = np.random.default_rng(seed=42)  # 固定种子
+        return rng.random((color_num, 3))
+
+    if mode == "random":
+        return np.random.rand(color_num, 3)
+
+    if mode == "cmap":
+        color_map = plt.get_cmap(color_map_id)
+
+        return np.array(
+            [color_map(i % len(color_map.colors))[:3] for i in range(color_num)]
+        )
 
 
 def toTriangleSoup(mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
@@ -61,13 +70,14 @@ def renderFaceLabelList(
 
     triangle_soup = toTriangleSoup(mesh)
 
-    num_submeshes = len(face_label_list)
+    num_submeshes = len(face_label_list) + 1
     colors = createRandomColors(num_submeshes)
+    colors[0][:] = 0.0
 
     face_colors = np.zeros_like(triangles).astype(np.float64)
 
     for i, submesh_faces in enumerate(face_label_list):
-        face_colors[submesh_faces] = colors[i]
+        face_colors[submesh_faces] = colors[i + 1]
 
     paintTriangleSoup(triangle_soup, face_colors)
 
@@ -78,14 +88,18 @@ def renderFaceLabelList(
 def renderFaceLabels(
     vertices: np.ndarray, triangles: np.ndarray, face_labels: np.ndarray
 ) -> bool:
-    num_submeshes = np.max(face_labels) + 1
+    print("start render face labels...")
+    num_submeshes = np.max(face_labels) + 2
     colors = createRandomColors(num_submeshes)
+    colors[0][:] = 0.0
 
-    face_colors = colors[face_labels]
+    face_colors = colors[face_labels + 1]
 
-    triangle_soup = o3d.geometry.TriangleMesh()
-    triangle_soup.vertices = o3d.utility.Vector3dVector(vertices)
-    triangle_soup.triangles = o3d.utility.Vector3iVector(triangles)
+    mesh = o3d.geometry.TriangleMesh()
+    mesh.vertices = o3d.utility.Vector3dVector(vertices)
+    mesh.triangles = o3d.utility.Vector3iVector(triangles)
+
+    triangle_soup = toTriangleSoup(mesh)
 
     paintTriangleSoup(triangle_soup, face_colors)
 

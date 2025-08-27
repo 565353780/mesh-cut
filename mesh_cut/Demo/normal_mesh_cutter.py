@@ -11,9 +11,11 @@ from mesh_cut.Module.normal_mesh_cutter import NormalMeshCutter
 def demo():
     # 设置输入和输出路径
     mesh_file_path = "/Users/chli/chLi/Dataset/vae-eval/mesh/000.obj"
-    mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
-    dist_max = 1.0 / 100
-    normal_angle_max = 10.0
+    mesh_file_path = "/Users/chli/chLi/Dataset/Famous/bunny-v2.ply"
+    # mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
+    dist_max = float("inf")
+    # dist_max = 1.0 / 500
+    normal_angle_max = 45.0
     output_dir = "./output"
 
     # 确保输出目录存在
@@ -27,8 +29,9 @@ def demo():
     normal_mesh_cutter = NormalMeshCutter(mesh_file_path, dist_max)
 
     # 可视化原始网格的曲率
-    print("Visualizing mesh curvature...")
-    normal_mesh_cutter.visualizeCurvature()
+    # print("Visualizing mesh curvature...")
+    # normal_mesh_cutter.visualizeCurvature()
+    # exit()
 
     # 执行网格切割
     print("Cutting mesh into adaptive segments...")
