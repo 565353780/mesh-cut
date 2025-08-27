@@ -1,49 +1,99 @@
 import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
+from typing import Union
 
 
-def createRandomColors(color_map, color_num: int) -> np.ndarray:
+def createRandomColors(color_num: int, color_map_id: str = "tab20") -> np.ndarray:
+    return np.random.rand(color_num, 3)
+    color_map = plt.get_cmap(color_map_id)
+
     return np.array(
         [color_map(i % len(color_map.colors))[:3] for i in range(color_num)]
     )
 
 
-def renderFaceLabels(vertices, triangles, face_labels) -> bool:
-    color_map = plt.get_cmap("tab20")
+def toTriangleSoup(mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
+    all_vertices = []
+    all_triangles = []
 
+    vertices = np.asarray(mesh.vertices)
+    triangles = np.asarray(mesh.triangles)
+
+    for tri in triangles:
+        v0, v1, v2 = vertices[tri]
+
+        base_idx = len(all_vertices)
+        all_vertices.extend([v0, v1, v2])
+        all_triangles.append([base_idx, base_idx + 1, base_idx + 2])
+
+    all_vertices = np.array(all_vertices)
+    all_triangles = np.array(all_triangles)
+
+    triangle_soup = o3d.geometry.TriangleMesh()
+    triangle_soup.vertices = o3d.utility.Vector3dVector(all_vertices)
+    triangle_soup.triangles = o3d.utility.Vector3iVector(all_triangles)
+    return triangle_soup
+
+
+def paintTriangleSoup(
+    triangle_soup: o3d.geometry.TriangleMesh,
+    triangle_colors: Union[np.ndarray, list],
+) -> bool:
+    triangles = np.asarray(triangle_soup.triangles)
+
+    vertex_colors = np.zeros_like(np.asarray(triangle_soup.vertices))
+    for i, triangle in enumerate(triangles):
+        vertex_colors[triangle] = triangle_colors[i]
+
+    triangle_soup.vertex_colors = o3d.utility.Vector3dVector(vertex_colors)
+    return True
+
+
+def renderFaceLabelList(
+    vertices: np.ndarray,
+    triangles: np.ndarray,
+    face_label_list: list,
+) -> bool:
     mesh = o3d.geometry.TriangleMesh()
     mesh.vertices = o3d.utility.Vector3dVector(vertices)
     mesh.triangles = o3d.utility.Vector3iVector(triangles)
 
-    num_submeshes = len(face_labels)
-    colors = createRandomColors(color_map, num_submeshes)
+    triangle_soup = toTriangleSoup(mesh)
+
+    num_submeshes = len(face_label_list)
+    colors = createRandomColors(num_submeshes)
 
     face_colors = np.zeros_like(triangles).astype(np.float64)
 
-    for i, submesh_faces in enumerate(face_labels):
+    for i, submesh_faces in enumerate(face_label_list):
         face_colors[submesh_faces] = colors[i]
 
-    vertex_colors = np.zeros_like(vertices)
-    vertex_count = np.zeros(vertices.shape[0])
+    paintTriangleSoup(triangle_soup, face_colors)
 
-    for i, triangle in enumerate(triangles):
-        for vertex_idx in triangle:
-            vertex_colors[vertex_idx] += face_colors[i]
-            vertex_count[vertex_idx] += 1
+    o3d.visualization.draw_geometries([triangle_soup])
+    return True
 
-    vertex_count = np.maximum(vertex_count, 1)[:, np.newaxis]
-    vertex_colors = vertex_colors / vertex_count
 
-    mesh.vertex_colors = o3d.utility.Vector3dVector(vertex_colors)
+def renderFaceLabels(
+    vertices: np.ndarray, triangles: np.ndarray, face_labels: np.ndarray
+) -> bool:
+    num_submeshes = np.max(face_labels) + 1
+    colors = createRandomColors(num_submeshes)
 
-    o3d.visualization.draw_geometries([mesh])
+    face_colors = colors[face_labels]
+
+    triangle_soup = o3d.geometry.TriangleMesh()
+    triangle_soup.vertices = o3d.utility.Vector3dVector(vertices)
+    triangle_soup.triangles = o3d.utility.Vector3iVector(triangles)
+
+    paintTriangleSoup(triangle_soup, face_colors)
+
+    o3d.visualization.draw_geometries([triangle_soup])
     return True
 
 
 def renderSubMeshSamplePoints(sub_mesh_sample_points: np.ndarray) -> bool:
-    color_map = plt.get_cmap("tab20")
-
     color_num, point_num = sub_mesh_sample_points.shape[:2]
 
     pcd = o3d.geometry.PointCloud()
@@ -53,7 +103,7 @@ def renderSubMeshSamplePoints(sub_mesh_sample_points: np.ndarray) -> bool:
     pcd.points = o3d.utility.Vector3dVector(points)
 
     print("start create pcd colors...")
-    unique_colors = createRandomColors(color_map, color_num)
+    unique_colors = createRandomColors(color_num)
     colors = np.repeat(unique_colors, point_num, axis=0)
     pcd.colors = o3d.utility.Vector3dVector(colors)
 

@@ -12,7 +12,7 @@ def demo():
     # 设置输入和输出路径
     mesh_file_path = "/Users/chli/chLi/Dataset/vae-eval/mesh/000.obj"
     mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
-    dist_max = 1.0 / 200
+    dist_max = 1.0 / 100
     normal_angle_max = 10.0
     output_dir = "./output"
 

@@ -1,12 +1,10 @@
-import torch
+import trimesh
 import numpy as np
+from tqdm import tqdm
 from typing import Union
+from collections import deque
 
-from cut_cpp import (
-    farthest_point_sampling,
-    run_parallel_region_growing,
-    toSubMeshSamplePoints,
-)
+from cut_cpp import toSubMeshSamplePoints
 
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
@@ -28,6 +26,8 @@ class NormalMeshCutter(BaseMeshCutter):
 
         self.vertex_normals = np.array([])
         self.triangle_normals = np.array([])
+
+        self.face_adjacency_list = []
 
         super().__init__(mesh_file_path, dist_max)
         return
@@ -76,8 +76,19 @@ class NormalMeshCutter(BaseMeshCutter):
             print("\t loadMesh failed for mesh_curvature!")
             return False
 
-        self.vertex_curvatures = self.mesh_curvature.toMeanV()
-        self.face_curvatures = self.mesh_curvature.toMeanF()
+        self.vertex_curvatures = self.mesh_curvature.toTotalV()
+        self.face_curvatures = self.mesh_curvature.toTotalF()
+        return True
+
+    def updateTriangleNeighboors(self) -> bool:
+        mesh = trimesh.Trimesh(vertices=self.vertices, faces=self.triangles)
+
+        face_adjacency = mesh.face_adjacency
+        self.face_adjacency_list = [[] for _ in range(self.triangles.shape[0])]
+
+        for i, j in face_adjacency:
+            self.face_adjacency_list[i].append(int(j))
+            self.face_adjacency_list[j].append(int(i))
         return True
 
     def loadMesh(
@@ -100,6 +111,53 @@ class NormalMeshCutter(BaseMeshCutter):
 
         return True
 
+    def toFaceNormalAngle(
+        self,
+        face_idx_1: int,
+        face_idx_2: int,
+    ) -> float:
+        if face_idx_1 == face_idx_2:
+            return 0.0
+
+        triangle_normal_1 = self.triangle_normals[face_idx_1]
+        triangle_normal_2 = self.triangle_normals[face_idx_2]
+
+        cos_value = np.dot(triangle_normal_1, triangle_normal_2)
+        cos_value = np.clip(cos_value, -1.0, 1.0)
+
+        angle_rad = np.arccos(cos_value)
+        angle_deg = np.degrees(angle_rad)
+
+        return angle_deg
+
+    def findSmoothRegion(
+        self,
+        seed_face_idx: int,
+        normal_angle_max: float,
+    ) -> list:
+        visited = set()
+        region = set()
+
+        queue = deque()
+        queue.append(seed_face_idx)
+        visited.add(seed_face_idx)
+        region.add(seed_face_idx)
+
+        while queue:
+            current_face_idx = queue.popleft()
+            for neighbor_face_idx in self.face_adjacency_list[current_face_idx]:
+                if neighbor_face_idx in visited:
+                    continue
+
+                visited.add(neighbor_face_idx)
+
+                angle = self.toFaceNormalAngle(seed_face_idx, neighbor_face_idx)
+                if angle <= normal_angle_max:
+                    region.add(neighbor_face_idx)
+                    queue.append(neighbor_face_idx)
+
+        return list(region)
+
     def cutMesh(
         self,
         normal_angle_max: float = 10.0,
@@ -110,26 +168,41 @@ class NormalMeshCutter(BaseMeshCutter):
             print("\t mesh is not valid!")
             return False
 
+        if not self.updateTriangleNeighboors():
+            print("[ERROR][NormalMeshCutter::cutMesh]")
+            print("\t updateTriangleNeighboors failed!")
+            return False
+
         self.face_labels = np.ones_like(self.face_curvatures, dtype=np.int32) * -1
         sorted_face_curvature_idxs = np.argsort(self.face_curvatures)
 
-        self.center_vertex_idxs = farthest_point_sampling(
-            torch.from_numpy(self.vertices).to(torch.float32), sub_mesh_num
-        )
+        for face_idx in tqdm(sorted_face_curvature_idxs):
+            if self.face_labels[face_idx] != -1:
+                continue
 
-        self.face_labels = run_parallel_region_growing(
-            self.vertices,
-            self.triangles,
-            self.fps_vertex_idxs.numpy(),
-            sub_mesh_num,
-        )
+            new_region = self.findSmoothRegion(face_idx, normal_angle_max)
+            new_face_label = int(np.max(self.face_labels)) + 1
 
+            self.face_labels[new_region] = new_face_label
+
+        new_face_labels = []
+        for i in range(np.max(self.face_labels) + 1):
+            curr_face_idxs = np.where(self.face_labels == i)[0]
+            if curr_face_idxs.shape[0] == 0:
+                continue
+
+            new_face_labels.append(curr_face_idxs)
+
+        self.face_labels = new_face_labels
+
+        """
         self.sub_mesh_sample_points = toSubMeshSamplePoints(
             torch.from_numpy(self.vertices).to(torch.float32),
             torch.from_numpy(self.triangles).to(torch.int),
             self.face_labels,
             points_per_submesh,
         )
+        """
         return True
 
     def visualizeCurvature(self) -> bool:
@@ -138,7 +211,7 @@ class NormalMeshCutter(BaseMeshCutter):
             print("\t mesh is not valid!")
             return False
 
-        curvature_vis = toVisiableVertexCurvature(self.vertex_curvatures)
+        curvature_vis = toVisiableVertexCurvature(self.face_curvatures)
 
         self.mesh_curvature.render(curvature_vis)
         return True
