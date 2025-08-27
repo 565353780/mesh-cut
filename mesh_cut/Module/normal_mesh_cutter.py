@@ -1,4 +1,3 @@
-import trimesh
 import numpy as np
 from tqdm import tqdm
 from typing import Union
@@ -9,6 +8,7 @@ from cut_cpp import toSubMeshSamplePoints
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
 from mesh_cut.Method.normal import normalize
+from mesh_cut.Method.triangle import createTriangleNeighboors
 from mesh_cut.Method.curvature import toVisiableVertexCurvature
 from mesh_cut.Module.base_mesh_cutter import BaseMeshCutter
 
@@ -84,14 +84,7 @@ class NormalMeshCutter(BaseMeshCutter):
         return True
 
     def updateTriangleNeighboors(self) -> bool:
-        mesh = trimesh.Trimesh(vertices=self.vertices, faces=self.triangles)
-
-        face_adjacency = mesh.face_adjacency
-        self.face_adjacency_list = [[] for _ in range(self.triangles.shape[0])]
-
-        for i, j in face_adjacency:
-            self.face_adjacency_list[i].append(int(j))
-            self.face_adjacency_list[j].append(int(i))
+        self.face_adjacency_list = createTriangleNeighboors(self.triangles)
         return True
 
     def loadMesh(
