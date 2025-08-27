@@ -1,7 +1,5 @@
-import os
 import torch
 import numpy as np
-import open3d as o3d
 from typing import Union
 
 from cut_cpp import (
@@ -12,85 +10,64 @@ from cut_cpp import (
 
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
+from mesh_cut.Method.normal import normalize
 from mesh_cut.Method.curvature import toVisiableVertexCurvature
-from mesh_cut.Method.render import renderFaceLabels, renderSubMeshSamplePoints
+from mesh_cut.Module.base_mesh_cutter import BaseMeshCutter
 
 
-class NormalMeshCutter(object):
-    def __init__(self, mesh_file_path: Union[str, None] = None):
+class NormalMeshCutter(BaseMeshCutter):
+    def __init__(
+        self,
+        mesh_file_path: Union[str, None] = None,
+        dist_max: float = 1.0 / 500,
+    ):
         self.mesh_curvature = MeshCurvature()
 
-        self.vertices = None
-        self.triangles = None
+        self.vertex_curvatures = np.array([])
+        self.face_curvatures = np.array([])
 
-        self.vertex_normals = None
+        self.vertex_normals = np.array([])
+        self.triangle_normals = np.array([])
 
-        self.vertex_curvatures = None
-        self.face_curvatures = None
-
-        # cut mesh results
-        self.fps_vertex_idxs = None
-        self.sub_mesh_sample_points = None
-
-        if mesh_file_path is not None:
-            self.loadMesh(mesh_file_path)
+        super().__init__(mesh_file_path, dist_max)
         return
 
     def isValid(self) -> bool:
-        if self.vertices is None:
-            return False
-        if self.triangles is None:
+        if not super().isValid():
             return False
 
-        if self.vertex_normals is None:
+        if self.vertex_normals.size == 0:
+            print("[ERROR][NormalMeshCutter::isValid]")
+            print("\t vertex_normals is empty!")
             return False
 
-        if self.vertex_curvatures is None:
+        if self.triangle_normals.size == 0:
+            print("[ERROR][NormalMeshCutter::isValid]")
+            print("\t triangle_normals is empty!")
             return False
-        if self.face_curvatures is None:
+
+        if self.vertex_curvatures.size == 0:
+            print("[ERROR][NormalMeshCutter::isValid]")
+            print("\t vertex_curvatures is empty!")
+            return False
+
+        if self.face_curvatures.size == 0:
+            print("[ERROR][NormalMeshCutter::isValid]")
+            print("\t face_curvatures is empty!")
             return False
 
         return True
 
-    def loadMesh(self, mesh_file_path: str) -> bool:
-        if not os.path.exists(mesh_file_path):
-            print("[ERROR][MeshCutter::loadMesh]")
-            print("\t mesh file not exist!")
-            print("\t mesh_file_path: ", mesh_file_path)
-            return False
-
-        mesh = o3d.io.read_triangle_mesh(mesh_file_path)
-
-        self.vertices = np.asarray(mesh.vertices, dtype=np.float64)
-        self.triangles = np.asarray(mesh.triangles, dtype=np.int32)
-
-        mesh.compute_vertex_normals()
-        self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
-        return True
-
-    def toO3DMesh(self) -> o3d.geometry.TriangleMesh:
-        mesh = o3d.geometry.TriangleMesh()
-        mesh.vertices = o3d.utility.Vector3dVector(self.vertices)
-        mesh.triangles = o3d.utility.Vector3iVector(self.triangles)
-
-        return mesh
-
-    def subdivMesh(self, target_vertex_num: int) -> bool:
-        if self.vertices.shape[0] >= target_vertex_num:
-            return True
-
+    def estimateNormals(self) -> bool:
         mesh = self.toO3DMesh()
 
-        while len(mesh.vertices) < target_vertex_num:
-            mesh = mesh.subdivide_midpoint(number_of_iterations=1)
-
-        self.vertices = np.asarray(mesh.vertices, dtype=np.float64)
-        self.triangles = np.asarray(mesh.triangles, dtype=int)
-
         mesh.compute_vertex_normals()
-        self.vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
+        vertex_normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
+        self.vertex_normals = normalize(vertex_normals)
 
-        o3d.io.write_triangle_mesh("../ma-sh/output/subdiv.ply", mesh)
+        mesh.compute_triangle_normals()
+        triangle_normals = np.asarray(mesh.triangle_normals, dtype=np.float64)
+        self.triangle_normals = normalize(triangle_normals)
         return True
 
     def estimateCurvatures(self) -> bool:
@@ -103,19 +80,40 @@ class NormalMeshCutter(object):
         self.face_curvatures = self.mesh_curvature.toMeanF()
         return True
 
+    def loadMesh(
+        self,
+        mesh_file_path: str,
+        dist_max: float = 1.0 / 500,
+    ) -> bool:
+        if not super().loadMesh(mesh_file_path, dist_max):
+            return False
+
+        if not self.estimateNormals():
+            print("[ERROR][NormalMeshCutter::loadMesh]")
+            print("\t estimateNormals failed!")
+            return False
+
+        if not self.estimateCurvatures():
+            print("[ERROR][NormalMeshCutter::loadMesh]")
+            print("\t estimateCurvatures failed!")
+            return False
+
+        return True
+
     def cutMesh(
-        self, sub_mesh_num: int = 400, points_per_submesh: int = 8192
+        self,
+        normal_angle_max: float = 10.0,
+        points_per_submesh: int = 8192,
     ) -> Union[list, bool]:
-        self.subdivMesh(10 * sub_mesh_num)
-
-        self.estimateCurvatures()
-
         if not self.isValid():
             print("[ERROR][MeshCutter::cutMesh]")
             print("\t mesh is not valid!")
             return False
 
-        self.fps_vertex_idxs = farthest_point_sampling(
+        self.face_labels = np.ones_like(self.face_curvatures, dtype=np.int32) * -1
+        sorted_face_curvature_idxs = np.argsort(self.face_curvatures)
+
+        self.center_vertex_idxs = farthest_point_sampling(
             torch.from_numpy(self.vertices).to(torch.float32), sub_mesh_num
         )
 
@@ -136,20 +134,11 @@ class NormalMeshCutter(object):
 
     def visualizeCurvature(self) -> bool:
         if not self.isValid():
-            self.estimateCurvatures()
-
-        if not self.isValid():
             print("[ERROR][MeshCutter::visualizeCurvature]")
             print("\t mesh is not valid!")
             return False
 
-        curvature_vis = 1.0 - toVisiableVertexCurvature(self.vertex_curvatures)
+        curvature_vis = toVisiableVertexCurvature(self.vertex_curvatures)
 
         self.mesh_curvature.render(curvature_vis)
         return True
-
-    def renderFaceLabels(self) -> bool:
-        return renderFaceLabels(self.vertices, self.triangles, self.face_labels)
-
-    def renderSubMeshSamplePoints(self) -> bool:
-        return renderSubMeshSamplePoints(self.sub_mesh_sample_points)
