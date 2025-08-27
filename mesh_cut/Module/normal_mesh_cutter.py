@@ -76,8 +76,11 @@ class NormalMeshCutter(BaseMeshCutter):
             print("\t loadMesh failed for mesh_curvature!")
             return False
 
-        self.vertex_curvatures = self.mesh_curvature.toTotalV()
-        self.face_curvatures = self.mesh_curvature.toTotalF()
+        self.vertex_curvatures = self.mesh_curvature.toGaussV()
+        self.face_curvatures = self.mesh_curvature.toGaussF()
+
+        self.vertex_curvatures = np.abs(self.vertex_curvatures)
+        self.face_curvatures = np.abs(self.face_curvatures)
         return True
 
     def updateTriangleNeighboors(self) -> bool:
