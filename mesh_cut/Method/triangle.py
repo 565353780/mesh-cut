@@ -131,3 +131,17 @@ def mapToSubMesh(
     sub_mesh.triangles = o3d.utility.Vector3iVector(mapped_triangles)
 
     return sub_mesh, idx_map
+
+
+def getTriangleAreas(vertices: np.ndarray, triangles: np.ndarray) -> np.ndarray:
+    v0 = vertices[triangles[:, 0]]
+    v1 = vertices[triangles[:, 1]]
+    v2 = vertices[triangles[:, 2]]
+
+    vec1 = v1 - v0
+    vec2 = v2 - v0
+
+    cross_prod = np.cross(vec1, vec2)
+    areas = 0.5 * np.linalg.norm(cross_prod, axis=1)
+
+    return areas

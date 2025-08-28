@@ -35,8 +35,7 @@ class CircleMeshCutter(BaseNormalMeshCutter):
             if len(free_neighboors) == 0:
                 break
 
-            print(free_neighboors)
-
+            # FIXME: need to render to check if it has any bug
             if not isVertexNeighboorsChainOrLoop(self.triangles, free_neighboors):
                 break
 

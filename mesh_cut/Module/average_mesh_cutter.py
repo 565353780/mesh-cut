@@ -1,4 +1,5 @@
 import torch
+from math import ceil
 from typing import Union
 
 from cut_cpp import (
@@ -23,8 +24,10 @@ class AverageMeshCutter(BaseMeshCutter):
         self,
         sub_mesh_num: int = 400,
         points_per_submesh: int = 8192,
+        subdiv_scale: float = 10.0,
     ) -> Union[list, bool]:
-        self.subdivMesh(10 * sub_mesh_num)
+        if subdiv_scale > 1.0:
+            self.subdivMesh(ceil(subdiv_scale * sub_mesh_num))
 
         if not self.isValid():
             print("[ERROR][AverageMeshCutter::cutMesh]")
@@ -42,10 +45,11 @@ class AverageMeshCutter(BaseMeshCutter):
             sub_mesh_num,
         )
 
-        self.sub_mesh_sample_points = toSubMeshSamplePoints(
-            torch.from_numpy(self.vertices).to(torch.float32),
-            torch.from_numpy(self.triangles).to(torch.int),
-            self.face_labels,
-            points_per_submesh,
-        )
+        if points_per_submesh > 0:
+            self.sub_mesh_sample_points = toSubMeshSamplePoints(
+                torch.from_numpy(self.vertices).to(torch.float32),
+                torch.from_numpy(self.triangles).to(torch.int),
+                self.face_labels,
+                points_per_submesh,
+            )
         return True
