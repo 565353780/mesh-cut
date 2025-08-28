@@ -1,6 +1,6 @@
 import numpy as np
 import open3d as o3d
-from typing import Tuple
+from typing import Union, Tuple
 from collections import defaultdict
 
 
@@ -43,6 +43,54 @@ def createVertexNeighboors(triangles: np.ndarray) -> list:
         neighbors.append(list(neighbor_faces))
 
     return neighbors
+
+
+def getRegionNeighboors(
+    region: Union[np.ndarray, list, set],
+    adjacency_list: list,
+) -> list:
+    region_neighboors = set()
+    for triangle_idx in region:
+        neighboors = adjacency_list[triangle_idx]
+
+        for neighboor in neighboors:
+            if neighboor in region:
+                continue
+
+            region_neighboors.add(neighboor)
+
+    return list(region_neighboors)
+
+
+def share_edge(face1, face2):
+    shared = set(face1) & set(face2)
+    return len(shared) == 2
+
+
+def isVertexNeighboorsChainOrLoop(
+    triangles: np.ndarray,
+    neighboors: list,
+) -> bool:
+    graph = defaultdict(set)
+    for i in range(len(neighboors) - 1):
+        for j in range(i + 1, len(neighboors)):
+            fi = neighboors[i]
+            fj = neighboors[j]
+            if share_edge(triangles[fi], triangles[fj]):
+                graph[fi].add(fj)
+                graph[fj].add(fi)
+
+    degrees = [len(graph[f]) for f in neighboors]
+
+    # loop
+    if all(d == 2 for d in degrees):
+        return True
+
+    # chain
+    if degrees.count(1) == 2 and all((d == 2 or d == 1) for d in degrees):
+        return True
+
+    return False
 
 
 def mapToSubMesh(
