@@ -27,7 +27,7 @@ class BaseMeshCutter(object):
         self.sub_mesh_sample_points = np.array([])
 
         if mesh_file_path is not None:
-            self.loadMesh(mesh_file_path, dist_max)
+            self.loadMeshFile(mesh_file_path, dist_max)
         return
 
     def isValid(self) -> bool:
@@ -45,17 +45,9 @@ class BaseMeshCutter(object):
 
     def loadMesh(
         self,
-        mesh_file_path: str,
+        mesh: o3d.geometry.TriangleMesh,
         dist_max: float = 1.0 / 500,
     ) -> bool:
-        if not os.path.exists(mesh_file_path):
-            print("[ERROR][BaseMeshCutter::loadMesh]")
-            print("\t mesh file not exist!")
-            print("\t mesh_file_path: ", mesh_file_path)
-            return False
-
-        mesh = o3d.io.read_triangle_mesh(mesh_file_path)
-
         if dist_max == float("inf"):
             subdiv_mesh = mesh
         else:
@@ -65,6 +57,21 @@ class BaseMeshCutter(object):
         self.vertices = np.asarray(subdiv_mesh.vertices, dtype=np.float64)
         self.triangles = np.asarray(subdiv_mesh.triangles, dtype=np.int32)
         return True
+
+    def loadMeshFile(
+        self,
+        mesh_file_path: str,
+        dist_max: float = 1.0 / 500,
+    ) -> bool:
+        if not os.path.exists(mesh_file_path):
+            print("[ERROR][BaseMeshCutter::loadMeshFile]")
+            print("\t mesh file not exist!")
+            print("\t mesh_file_path: ", mesh_file_path)
+            return False
+
+        mesh = o3d.io.read_triangle_mesh(mesh_file_path)
+
+        return self.loadMesh(mesh, dist_max)
 
     def subdivMesh(self, target_vertex_num: int) -> bool:
         if self.vertices.shape[0] >= target_vertex_num:

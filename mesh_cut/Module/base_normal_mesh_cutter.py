@@ -1,19 +1,18 @@
 import numpy as np
-from tqdm import tqdm
+import open3d as o3d
 from typing import Union
-from collections import deque
 
 from cut_cpp import toSubMeshSamplePoints
 
 from diff_curvature.Module.mesh_curvature import MeshCurvature
 
 from mesh_cut.Method.normal import normalize
-from mesh_cut.Method.triangle import createTriangleNeighboors
+from mesh_cut.Method.triangle import createEdgeNeighboors, createVertexNeighboors
 from mesh_cut.Method.curvature import toVisiableVertexCurvature
 from mesh_cut.Module.base_mesh_cutter import BaseMeshCutter
 
 
-class NormalMeshCutter(BaseMeshCutter):
+class BaseNormalMeshCutter(BaseMeshCutter):
     def __init__(
         self,
         mesh_file_path: Union[str, None] = None,
@@ -37,22 +36,22 @@ class NormalMeshCutter(BaseMeshCutter):
             return False
 
         if self.vertex_normals.size == 0:
-            print("[ERROR][NormalMeshCutter::isValid]")
+            print("[ERROR][BaseNormalMeshCutter::isValid]")
             print("\t vertex_normals is empty!")
             return False
 
         if self.triangle_normals.size == 0:
-            print("[ERROR][NormalMeshCutter::isValid]")
+            print("[ERROR][BaseNormalMeshCutter::isValid]")
             print("\t triangle_normals is empty!")
             return False
 
         if self.vertex_curvatures.size == 0:
-            print("[ERROR][NormalMeshCutter::isValid]")
+            print("[ERROR][BaseNormalMeshCutter::isValid]")
             print("\t vertex_curvatures is empty!")
             return False
 
         if self.face_curvatures.size == 0:
-            print("[ERROR][NormalMeshCutter::isValid]")
+            print("[ERROR][BaseNormalMeshCutter::isValid]")
             print("\t face_curvatures is empty!")
             return False
 
@@ -83,25 +82,29 @@ class NormalMeshCutter(BaseMeshCutter):
         self.face_curvatures = np.abs(self.face_curvatures)
         return True
 
-    def updateTriangleNeighboors(self) -> bool:
-        self.face_adjacency_list = createTriangleNeighboors(self.triangles)
+    def updateEdgeNeighboors(self) -> bool:
+        self.face_adjacency_list = createEdgeNeighboors(self.triangles)
+        return True
+
+    def updateVertexNeighboors(self) -> bool:
+        self.face_adjacency_list = createVertexNeighboors(self.triangles)
         return True
 
     def loadMesh(
         self,
-        mesh_file_path: str,
+        mesh: o3d.geometry.TriangleMesh,
         dist_max: float = 1.0 / 500,
     ) -> bool:
-        if not super().loadMesh(mesh_file_path, dist_max):
+        if not super().loadMesh(mesh, dist_max):
             return False
 
         if not self.estimateNormals():
-            print("[ERROR][NormalMeshCutter::loadMesh]")
+            print("[ERROR][BaseNormalMeshCutter::loadMesh]")
             print("\t estimateNormals failed!")
             return False
 
         if not self.estimateCurvatures():
-            print("[ERROR][NormalMeshCutter::loadMesh]")
+            print("[ERROR][BaseNormalMeshCutter::loadMesh]")
             print("\t estimateCurvatures failed!")
             return False
 
@@ -126,79 +129,9 @@ class NormalMeshCutter(BaseMeshCutter):
 
         return angle_deg
 
-    def findSmoothRegion(
-        self,
-        seed_face_idx: int,
-        normal_angle_max: float,
-    ) -> list:
-        visited = set()
-        region = set()
-
-        queue = deque()
-        queue.append(seed_face_idx)
-        visited.add(seed_face_idx)
-        region.add(seed_face_idx)
-
-        while queue:
-            current_face_idx = queue.popleft()
-            for neighbor_face_idx in self.face_adjacency_list[current_face_idx]:
-                if self.face_labels[neighbor_face_idx] != -1:
-                    continue
-
-                if neighbor_face_idx in visited:
-                    continue
-
-                visited.add(neighbor_face_idx)
-
-                angle = self.toFaceNormalAngle(seed_face_idx, neighbor_face_idx)
-                if angle <= normal_angle_max:
-                    region.add(neighbor_face_idx)
-                    queue.append(neighbor_face_idx)
-
-        return list(region)
-
-    def cutMesh(
-        self,
-        normal_angle_max: float = 10.0,
-        points_per_submesh: int = 8192,
-    ) -> Union[list, bool]:
-        if not self.isValid():
-            print("[ERROR][MeshCutter::cutMesh]")
-            print("\t mesh is not valid!")
-            return False
-
-        if not self.updateTriangleNeighboors():
-            print("[ERROR][NormalMeshCutter::cutMesh]")
-            print("\t updateTriangleNeighboors failed!")
-            return False
-
-        self.face_labels = np.ones_like(self.face_curvatures, dtype=np.int32) * -1
-        sorted_face_curvature_idxs = np.argsort(self.face_curvatures)
-
-        for face_idx in tqdm(sorted_face_curvature_idxs):
-            if self.face_labels[face_idx] != -1:
-                continue
-
-            new_region = self.findSmoothRegion(face_idx, normal_angle_max)
-            new_face_label = int(np.max(self.face_labels)) + 1
-
-            self.face_labels[new_region] = new_face_label
-
-            self.renderFaceLabels()
-
-        """
-        self.sub_mesh_sample_points = toSubMeshSamplePoints(
-            torch.from_numpy(self.vertices).to(torch.float32),
-            torch.from_numpy(self.triangles).to(torch.int),
-            self.face_labels,
-            points_per_submesh,
-        )
-        """
-        return True
-
     def visualizeCurvature(self) -> bool:
         if not self.isValid():
-            print("[ERROR][MeshCutter::visualizeCurvature]")
+            print("[ERROR][BaseNormalMeshCutter::visualizeCurvature]")
             print("\t mesh is not valid!")
             return False
 
