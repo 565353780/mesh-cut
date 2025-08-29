@@ -17,7 +17,10 @@ class BaseMeshCutter(object):
         self,
         mesh_file_path: Union[str, None] = None,
         dist_max: float = 1.0 / 500,
+        print_progress: bool = True,
     ):
+        self.print_progress = print_progress
+
         self.vertices = np.array([])
         self.triangles = np.array([])
 
@@ -51,7 +54,7 @@ class BaseMeshCutter(object):
         if dist_max == float("inf"):
             subdiv_mesh = mesh
         else:
-            mesh_subdiver = MeshSubdiver(mesh, dist_max)
+            mesh_subdiver = MeshSubdiver(mesh, dist_max, self.print_progress)
             subdiv_mesh = mesh_subdiver.createSubdivMesh()
 
         self.vertices = np.asarray(subdiv_mesh.vertices, dtype=np.float64)

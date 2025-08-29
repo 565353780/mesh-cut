@@ -43,8 +43,8 @@ torch::Tensor farthest_point_sampling(torch::Tensor points,
   std::uniform_int_distribution<> dis(0, num_points - 1);
   sampled_indices[0] = dis(gen);
 
-  std::cout << "[INFO][sample::farthest_point_sampling]" << std::endl;
-  std::cout << "\t start sample fps points..." << std::endl;
+  // std::cout << "[INFO][sample::farthest_point_sampling]" << std::endl;
+  // std::cout << "\t start sample fps points..." << std::endl;
 
   // 主循环
   for (int i = 1; i < sample_point_num; ++i) {

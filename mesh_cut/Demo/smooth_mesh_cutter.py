@@ -14,7 +14,6 @@ def demo():
     mesh_file_path = "/Users/chli/chLi/Dataset/Famous/bunny-v2.ply"
     mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
     dist_max = float("inf")
-    # dist_max = 1.0 / 200
     normal_angle_max = 30.0
     output_dir = "./output"
 

@@ -16,8 +16,9 @@ class AverageMeshCutter(BaseMeshCutter):
         self,
         mesh_file_path: Union[str, None] = None,
         dist_max: float = 1.0 / 500,
+        print_progress: bool = True,
     ):
-        super().__init__(mesh_file_path, dist_max)
+        super().__init__(mesh_file_path, dist_max, print_progress)
         return
 
     def cutMesh(

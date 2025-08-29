@@ -10,7 +10,7 @@ class SmoothMeshCutter(BaseNormalMeshCutter):
     def __init__(
         self,
         mesh_file_path: Union[str, None] = None,
-        dist_max: float = 1.0 / 500,
+        dist_max: float = float("inf"),
     ):
         super().__init__(mesh_file_path, dist_max)
         return

@@ -1,6 +1,7 @@
 import numpy as np
+import open3d as o3d
 from tqdm import trange
-from typing import Union
+from typing import Union, Tuple
 
 from mesh_cut.Method.triangle import mapToSubMesh, getTriangleAreas
 from mesh_cut.Module.smooth_mesh_cutter import SmoothMeshCutter
@@ -11,15 +12,18 @@ class SmoothAverageMeshCutter(SmoothMeshCutter):
     def __init__(
         self,
         mesh_file_path: Union[str, None] = None,
-        dist_max: float = 1.0 / 500,
+        smooth_dist_max: float = float("inf"),
+        average_dist_max: float = 1.0 / 100,
     ):
-        super().__init__(mesh_file_path, dist_max)
+        self.average_dist_max = average_dist_max
+
+        super().__init__(mesh_file_path, smooth_dist_max)
         return
 
     def createAverageRegions(
         self,
         region: np.ndarray,
-    ) -> list:
+    ) -> Tuple[o3d.geometry.TriangleMesh, list]:
         sub_mesh, idx_map = mapToSubMesh(self.vertices, self.triangles, region)
 
         areas = getTriangleAreas(self.vertices, self.triangles[region])
@@ -35,31 +39,17 @@ class SmoothAverageMeshCutter(SmoothMeshCutter):
         submesh_num = int(area_sum / sphere_area)
 
         if submesh_num < 2:
-            return [region]
+            return sub_mesh, [list(range(region.shape[0]))]
 
-        if region.shape[0] / submesh_num < 2.0:
-            return [region]
+        average_mesh_cutter = AverageMeshCutter(print_progress=False)
+        average_mesh_cutter.loadMesh(sub_mesh, self.average_dist_max)
 
-        if submesh_num >= region.shape[0]:
-            return region.reshape(-1, 1).tolist()
+        average_mesh_cutter.cutMesh(submesh_num, 0, 10)
 
-        average_mesh_cutter = AverageMeshCutter()
-        average_mesh_cutter.loadMesh(sub_mesh, float("inf"))
-
-        average_mesh_cutter.cutMesh(submesh_num, 0, 0)
-
-        average_regions = []
-
+        subdiv_mesh = average_mesh_cutter.toO3DMesh()
         average_face_labels = average_mesh_cutter.face_labels
 
-        for mapped_average_region in average_face_labels:
-            if len(mapped_average_region) == 0:
-                continue
-
-            average_region = idx_map["t_inv"][mapped_average_region]
-            average_regions.append(average_region)
-
-        return average_regions
+        return subdiv_mesh, average_face_labels
 
     def cutMesh(
         self,
@@ -71,19 +61,27 @@ class SmoothAverageMeshCutter(SmoothMeshCutter):
             print("\t SmoothMeshCutter.cutMesh failed!")
             return False
 
-        new_face_labels = np.ones_like(self.face_labels) * -1
+        merge_mesh = o3d.geometry.TriangleMesh()
+        mrege_face_labels_list = []
 
         for i in trange(int(np.max(self.face_labels)) + 1):
             smooth_region = np.where(self.face_labels == i)[0]
 
-            average_regions = self.createAverageRegions(smooth_region)
+            subdiv_mesh, average_regions = self.createAverageRegions(smooth_region)
 
-            for j in range(len(average_regions)):
-                new_face_label = int(np.max(new_face_labels)) + 1
+            start_triangle_idx = np.asarray(merge_mesh.triangles).shape[0]
 
-                new_face_labels[average_regions[j]] = new_face_label
+            merge_mesh += subdiv_mesh
 
-        self.face_labels = new_face_labels
+            for average_region in average_regions:
+                mapped_region = [
+                    region_idx + start_triangle_idx for region_idx in average_region
+                ]
+                mrege_face_labels_list.append(mapped_region)
+
+        self.vertices = np.asarray(merge_mesh.vertices, dtype=np.float64)
+        self.triangles = np.asarray(merge_mesh.triangles, dtype=np.int32)
+        self.face_labels = mrege_face_labels_list
 
         # self.renderFaceLabels()
 

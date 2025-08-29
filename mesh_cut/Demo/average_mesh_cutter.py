@@ -11,7 +11,8 @@ def demo():
     # 设置输入和输出路径
     mesh_file_path = "/Users/chli/chLi/Dataset/vae-eval/mesh/000.obj"
     mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
-    dist_max = 1.0 / 200
+    dist_max = 1.0 / 100
+    print_progress = True
     output_dir = "./output"
 
     # 确保输出目录存在
@@ -23,7 +24,7 @@ def demo():
     points_per_submesh = 1024
 
     print("Loading mesh from", mesh_file_path)
-    average_mesh_cutter = AverageMeshCutter(mesh_file_path, dist_max)
+    average_mesh_cutter = AverageMeshCutter(mesh_file_path, dist_max, print_progress)
 
     # 执行网格切割
     print(f"Cutting mesh into {sub_mesh_num} segments...")
