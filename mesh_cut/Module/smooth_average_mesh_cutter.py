@@ -26,6 +26,9 @@ class SmoothAverageMeshCutter(SmoothMeshCutter):
     ) -> Tuple[o3d.geometry.TriangleMesh, list]:
         sub_mesh, idx_map = mapToSubMesh(self.vertices, self.triangles, region)
 
+        if region.shape[0] < 5:
+            return sub_mesh, [list(range(region.shape[0]))]
+
         areas = getTriangleAreas(self.vertices, self.triangles[region])
         area_sum = np.sum(areas)
 
