@@ -6,8 +6,8 @@ from typing import Union
 from mesh_sample.Module.mesh_subdiver import MeshSubdiver
 
 from mesh_cut.Method.render import (
-    renderFaceLabelList,
-    renderFaceLabels,
+    paintFaceLabelList,
+    paintFaceLabels,
     renderSubMeshSamplePoints,
 )
 
@@ -96,11 +96,16 @@ class BaseMeshCutter(object):
 
         return mesh
 
-    def renderFaceLabels(self) -> bool:
+    def toPaintedTriangleSoup(self) -> o3d.geometry.TriangleMesh:
         if isinstance(self.face_labels, list):
-            return renderFaceLabelList(self.vertices, self.triangles, self.face_labels)
+            return paintFaceLabelList(self.vertices, self.triangles, self.face_labels)
         else:
-            return renderFaceLabels(self.vertices, self.triangles, self.face_labels)
+            return paintFaceLabels(self.vertices, self.triangles, self.face_labels)
+
+    def renderFaceLabels(self) -> bool:
+        triangle_soup = self.toPaintedTriangleSoup()
+        o3d.visualization.draw_geometries([triangle_soup])
+        return True
 
     def renderSubMeshSamplePoints(self) -> bool:
         return renderSubMeshSamplePoints(self.sub_mesh_sample_points)

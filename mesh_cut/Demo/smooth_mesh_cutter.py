@@ -5,6 +5,8 @@ sys.path.append("../diff-curvature")
 
 import os
 import time
+import open3d as o3d
+
 from mesh_cut.Module.smooth_mesh_cutter import SmoothMeshCutter
 
 
@@ -13,9 +15,11 @@ def demo():
     mesh_file_path = "/Users/chli/chLi/Dataset/vae-eval/mesh/000.obj"
     mesh_file_path = "/Users/chli/chLi/Dataset/Famous/bunny-v2.ply"
     # mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
+    mesh_file_path = "/Users/chli/chLi/Dataset/AMCAX/CAD/Untitled.off"
+    mesh_file_path = "/Users/chli/chLi/Dataset/AMCAX/CAD/阀体001.obj"
     dist_max = 1.0 / 200
     dist_max = float("inf")
-    normal_angle_max = 30.0
+    normal_angle_max = 70.0
     output_dir = "./output"
 
     # 确保输出目录存在
@@ -50,4 +54,10 @@ def demo():
     # print("Render sub meshes...")
     # normal_mesh_cutter.renderSubMeshSamplePoints()
 
+    """
+    triangle_soup = smooth_mesh_cutter.toPaintedTriangleSoup()
+    o3d.io.write_triangle_mesh(
+        "./output/colored_triangle_soup.ply", triangle_soup, write_ascii=True
+    )
+    """
     return True

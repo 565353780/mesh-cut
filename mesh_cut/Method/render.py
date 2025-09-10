@@ -59,11 +59,11 @@ def paintTriangleSoup(
     return True
 
 
-def renderFaceLabelList(
+def paintFaceLabelList(
     vertices: np.ndarray,
     triangles: np.ndarray,
     face_label_list: list,
-) -> bool:
+) -> o3d.geometry.TriangleMesh:
     mesh = o3d.geometry.TriangleMesh()
     mesh.vertices = o3d.utility.Vector3dVector(vertices)
     mesh.triangles = o3d.utility.Vector3iVector(triangles)
@@ -81,13 +81,12 @@ def renderFaceLabelList(
 
     paintTriangleSoup(triangle_soup, face_colors)
 
-    o3d.visualization.draw_geometries([triangle_soup])
-    return True
+    return triangle_soup
 
 
-def renderFaceLabels(
+def paintFaceLabels(
     vertices: np.ndarray, triangles: np.ndarray, face_labels: np.ndarray
-) -> bool:
+) -> o3d.geometry.TriangleMesh:
     print("start render face labels...")
     num_submeshes = np.max(face_labels) + 2
     colors = createRandomColors(num_submeshes)
@@ -102,9 +101,7 @@ def renderFaceLabels(
     triangle_soup = toTriangleSoup(mesh)
 
     paintTriangleSoup(triangle_soup, face_colors)
-
-    o3d.visualization.draw_geometries([triangle_soup])
-    return True
+    return triangle_soup
 
 
 def renderSubMeshSamplePoints(sub_mesh_sample_points: np.ndarray) -> bool:
