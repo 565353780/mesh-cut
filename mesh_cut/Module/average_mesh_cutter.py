@@ -56,13 +56,18 @@ class AverageMeshCutter(BaseMeshCutter):
             for i, submesh_faces in enumerate(self.face_labels):
                 unique_face_labels[submesh_faces] = i
 
-            self.face_labels = unique_face_labels
+            groups = []
+            for i in range(sub_mesh_num):
+                face_group = np.where(unique_face_labels == i)[0]
+                groups.append(face_group)
+
+            self.face_labels = groups
 
         if points_per_submesh > 0:
             self.sub_mesh_sample_points = toSubMeshSamplePoints(
                 torch.from_numpy(self.vertices).to(torch.float32),
                 torch.from_numpy(self.triangles).to(torch.int),
-                self.face_labels.reshape(-1, 1),
+                self.face_labels,
                 points_per_submesh,
             )
         return True
