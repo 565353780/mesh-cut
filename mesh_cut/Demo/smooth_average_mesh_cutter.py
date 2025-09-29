@@ -12,8 +12,8 @@ def demo():
     # 设置输入和输出路径
     mesh_file_path = "/Users/chli/chLi/Dataset/vae-eval/mesh/000.obj"
     mesh_file_path = "/Users/chli/chLi/Dataset/Famous/bunny-v2.ply"
-    mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
-    smooth_dist_max = float('inf')
+    # mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
+    smooth_dist_max = float("inf")
     average_dist_max = 1.0 / 100
     normal_angle_max = 30.0
     output_dir = "./output"
@@ -27,7 +27,9 @@ def demo():
 
     print("Loading mesh from", mesh_file_path)
     smooth_average_mesh_cutter = SmoothAverageMeshCutter(
-        mesh_file_path, smooth_dist_max, average_dist_max
+        mesh_file_path,
+        smooth_dist_max,
+        average_dist_max,
     )
 
     # 可视化原始网格的曲率

@@ -10,8 +10,10 @@ from mesh_cut.Module.average_mesh_cutter import AverageMeshCutter
 def demo():
     # 设置输入和输出路径
     mesh_file_path = "/Users/chli/chLi/Dataset/vae-eval/mesh/000.obj"
-    mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
+    # mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
     dist_max = 1.0 / 100
+    # dist_max = float("inf")
+    is_unique_label = True
     print_progress = True
     output_dir = "./output"
 
@@ -24,7 +26,12 @@ def demo():
     points_per_submesh = 1024
 
     print("Loading mesh from", mesh_file_path)
-    average_mesh_cutter = AverageMeshCutter(mesh_file_path, dist_max, print_progress)
+    average_mesh_cutter = AverageMeshCutter(
+        mesh_file_path,
+        dist_max,
+        is_unique_label,
+        print_progress,
+    )
 
     # 执行网格切割
     print(f"Cutting mesh into {sub_mesh_num} segments...")

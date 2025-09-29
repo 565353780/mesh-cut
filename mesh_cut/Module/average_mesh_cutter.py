@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from math import ceil
 from typing import Union
 
@@ -16,8 +17,11 @@ class AverageMeshCutter(BaseMeshCutter):
         self,
         mesh_file_path: Union[str, None] = None,
         dist_max: float = 1.0 / 500,
+        is_unique_label: bool = False,
         print_progress: bool = True,
     ):
+        self.is_unique_label = is_unique_label
+
         super().__init__(mesh_file_path, dist_max, print_progress)
         return
 
@@ -46,11 +50,19 @@ class AverageMeshCutter(BaseMeshCutter):
             sub_mesh_num,
         )
 
+        if self.is_unique_label:
+            unique_face_labels = np.zeros(self.triangles.shape[0]).astype(np.int32) * -1
+
+            for i, submesh_faces in enumerate(self.face_labels):
+                unique_face_labels[submesh_faces] = i
+
+            self.face_labels = unique_face_labels
+
         if points_per_submesh > 0:
             self.sub_mesh_sample_points = toSubMeshSamplePoints(
                 torch.from_numpy(self.vertices).to(torch.float32),
                 torch.from_numpy(self.triangles).to(torch.int),
-                self.face_labels,
+                self.face_labels.reshape(-1, 1),
                 points_per_submesh,
             )
         return True

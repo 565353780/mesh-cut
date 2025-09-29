@@ -15,8 +15,8 @@ def demo():
     mesh_file_path = "/Users/chli/chLi/Dataset/vae-eval/mesh/000.obj"
     mesh_file_path = "/Users/chli/chLi/Dataset/Famous/bunny-v2.ply"
     # mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
-    mesh_file_path = "/Users/chli/chLi/Dataset/AMCAX/CAD/Untitled.off"
-    mesh_file_path = "/Users/chli/chLi/Dataset/AMCAX/CAD/阀体001.obj"
+    # mesh_file_path = "/Users/chli/chLi/Dataset/AMCAX/CAD/Untitled.off"
+    # mesh_file_path = "/Users/chli/chLi/Dataset/AMCAX/CAD/阀体001.obj"
     dist_max = 1.0 / 200
     dist_max = float("inf")
     normal_angle_max = 70.0

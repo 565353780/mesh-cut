@@ -44,7 +44,9 @@ class SmoothAverageMeshCutter(SmoothMeshCutter):
         if submesh_num < 2:
             return sub_mesh, [list(range(region.shape[0]))]
 
-        average_mesh_cutter = AverageMeshCutter(print_progress=False)
+        average_mesh_cutter = AverageMeshCutter(
+            is_unique_label=False, print_progress=False
+        )
         average_mesh_cutter.loadMesh(sub_mesh, self.average_dist_max)
 
         average_mesh_cutter.cutMesh(submesh_num, 0, 10)
