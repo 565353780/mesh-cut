@@ -10,3 +10,6 @@ cd mesh-sample
 
 cd ../diff-curvature
 ./dev_setup.sh
+
+cd ../mesh-cut
+./compile.sh
