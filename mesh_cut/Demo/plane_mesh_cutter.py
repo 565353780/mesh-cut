@@ -23,12 +23,23 @@ def demo():
     )
 
     print("Cutting mesh by plane...")
-    mesh_list = PlaneMeshCutter.cut(mesh, plane)
+    cut_result = PlaneMeshCutter.cut(mesh, plane)
 
-    print(f"Cut into {len(mesh_list)} parts")
-    for i, m in enumerate(mesh_list):
-        print(f"  Part {i}: {len(m.vertices)} vertices, {len(m.faces)} faces")
+    print(f"Cut into {len(cut_result.meshes)} parts")
+    for i, (m, loops) in enumerate(zip(cut_result.meshes, cut_result.boundary_loops)):
+        total_boundary_verts = sum(len(lp) for lp in loops)
+        print(f"  Part {i}: {len(m.vertices)} vertices, {len(m.faces)} faces, "
+              f"{len(loops)} boundary loops, {total_boundary_verts} boundary vertices")
         m.export(output_dir + f'{i:06d}.ply')
 
-    #PlaneMeshCutter.visualize(mesh_list, plane)
+    if cut_result.matched_loops:
+        print(f"Matched {len(cut_result.matched_loops)} boundary loop pairs:")
+        for match in cut_result.matched_loops:
+            pos_loop = cut_result.boundary_loops[0][match.positive_loop_idx]
+            neg_loop = cut_result.boundary_loops[1][match.negative_loop_idx]
+            print(f"  positive loop {match.positive_loop_idx} ({len(pos_loop)} verts) "
+                  f"<-> negative loop {match.negative_loop_idx} ({len(neg_loop)} verts), "
+                  f"cost={match.transport_cost:.6f}")
+
+    #PlaneMeshCutter.visualize(cut_result.meshes, plane)
     return True
