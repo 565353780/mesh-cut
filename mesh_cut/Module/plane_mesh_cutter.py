@@ -274,38 +274,43 @@ class PlaneMeshCutter(object):
             mesh, plane.normal, plane.pos, return_faces=True,
         )
 
-        cut_face_set = set(face_index.tolist())
+        cut_mask = np.zeros(len(mesh.faces), dtype=bool)
+        cut_mask[face_index] = True
+        uncut_mask = ~cut_mask
+
+        uncut_faces = mesh.faces[uncut_mask]
+        mean_dots = dots[uncut_faces].mean(axis=1)
+
+        pos_mask = mean_dots >= 0
+        neg_mask = ~pos_mask
+
+        pos_uncut_faces = uncut_faces[pos_mask]
+        neg_uncut_faces = uncut_faces[neg_mask]
 
         pos_verts_list: List[np.ndarray] = []
         pos_faces_list: List[np.ndarray] = []
         neg_verts_list: List[np.ndarray] = []
         neg_faces_list: List[np.ndarray] = []
-        pos_vert_count = 0
-        neg_vert_count = 0
 
-        # 处理未被切割的面: 按重心到平面的有符号距离分配
-        for fi in range(len(mesh.faces)):
-            if fi in cut_face_set:
-                continue
-            face = mesh.faces[fi]
-            face_dots = dots[face]
-            mean_dot = face_dots.mean()
-            tri = mesh.vertices[face]
-            if mean_dot >= 0:
-                pos_faces_list.append(
-                    np.array([[pos_vert_count, pos_vert_count + 1, pos_vert_count + 2]])
-                )
-                pos_verts_list.append(tri)
-                pos_vert_count += 3
-            else:
-                neg_faces_list.append(
-                    np.array([[neg_vert_count, neg_vert_count + 1, neg_vert_count + 2]])
-                )
-                neg_verts_list.append(tri)
-                neg_vert_count += 3
+        if len(pos_uncut_faces) > 0:
+            pos_uncut_verts = mesh.vertices[pos_uncut_faces.ravel()].reshape(-1, 3, 3)
+            pos_verts_list.append(pos_uncut_verts.reshape(-1, 3))
+            n_pos = len(pos_uncut_faces)
+            idx = np.arange(n_pos, dtype=np.int64) * 3
+            pos_faces_list.append(np.column_stack([idx, idx + 1, idx + 2]))
+        pos_vert_count = len(pos_uncut_faces) * 3
+
+        if len(neg_uncut_faces) > 0:
+            neg_uncut_verts = mesh.vertices[neg_uncut_faces.ravel()].reshape(-1, 3, 3)
+            neg_verts_list.append(neg_uncut_verts.reshape(-1, 3))
+            n_neg = len(neg_uncut_faces)
+            idx = np.arange(n_neg, dtype=np.int64) * 3
+            neg_faces_list.append(np.column_stack([idx, idx + 1, idx + 2]))
+        neg_vert_count = len(neg_uncut_faces) * 3
 
         # 处理被切割的面
-        for i, fi in enumerate(face_index):
+        for i in range(len(face_index)):
+            fi = face_index[i]
             face = mesh.faces[fi]
             seg_start = lines[i, 0]
             seg_end = lines[i, 1]
