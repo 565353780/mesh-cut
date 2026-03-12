@@ -15,15 +15,12 @@ class PlaneMeshCutter(object):
         mesh: trimesh.Trimesh,
         plane: Plane,
     ) -> List[trimesh.Trimesh]:
-        plane_origin = plane.pos
-        plane_normal = plane.normal / np.linalg.norm(plane.normal)
-
         positive_part = trimesh.intersections.slice_mesh_plane(
-            mesh, plane_normal, plane_origin, cap=True
+            mesh, plane.normal, plane.pos, cap=False,
         )
 
         negative_part = trimesh.intersections.slice_mesh_plane(
-            mesh, -plane_normal, plane_origin, cap=True
+            mesh, -plane.normal, plane.pos, cap=False,
         )
 
         result = []

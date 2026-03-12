@@ -28,6 +28,7 @@ def demo():
     print(f"Cut into {len(mesh_list)} parts")
     for i, m in enumerate(mesh_list):
         print(f"  Part {i}: {len(m.vertices)} vertices, {len(m.faces)} faces")
+        m.export(output_dir + f'{i:06d}.ply')
 
-    PlaneMeshCutter.visualize(mesh_list, plane)
+    #PlaneMeshCutter.visualize(mesh_list, plane)
     return True
