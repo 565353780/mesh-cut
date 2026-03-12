@@ -2,6 +2,7 @@ import trimesh
 import numpy as np
 import open3d as o3d
 
+from scipy.spatial import cKDTree
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Union
@@ -38,7 +39,8 @@ def _merge_close_points(
 
 @dataclass
 class CutResult:
-    meshes: List[trimesh.Trimesh] = field(default_factory=list)
+    pos_mesh: trimesh.Trimesh = field(default_factory=trimesh.Trimesh)
+    neg_mesh: trimesh.Trimesh = field(default_factory=trimesh.Trimesh)
     boundary_loops: List[List[Tuple[int, int]]] = field(default_factory=list)
 
 
@@ -305,20 +307,17 @@ class PlaneMeshCutter(object):
             all_faces = np.vstack(f_list)
             parts.append(trimesh.Trimesh(vertices=all_verts, faces=all_faces, process=True))
 
-        pos_part, neg_part = parts[0], parts[1]
+        result.pos_mesh = parts[0]
+        result.neg_mesh = parts[1]
 
-        if pos_part is not None and neg_part is not None and len(boundary_loops_coords) > 0:
-            from scipy.spatial import cKDTree
-            pos_tree = cKDTree(pos_part.vertices)
-            neg_tree = cKDTree(neg_part.vertices)
+        if result.pos_mesh is not None and result.neg_mesh is not None and len(boundary_loops_coords) > 0:
+            pos_tree = cKDTree(result.pos_mesh.vertices)
+            neg_tree = cKDTree(result.neg_mesh.vertices)
             for loop_coords in boundary_loops_coords:
                 _, pos_indices = pos_tree.query(loop_coords)
                 _, neg_indices = neg_tree.query(loop_coords)
                 paired_loop = list(zip(pos_indices.tolist(), neg_indices.tolist()))
                 result.boundary_loops.append(paired_loop)
-
-        result.meshes = [p for p in parts if p is not None]
-
         return result
 
     @staticmethod

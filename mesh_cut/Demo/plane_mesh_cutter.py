@@ -25,14 +25,12 @@ def demo():
     print("Cutting mesh by plane...")
     cut_result = PlaneMeshCutter.cut(mesh, plane)
 
-    print(f"Cut into {len(cut_result.meshes)} parts")
-    for i, m in enumerate(cut_result.meshes):
-        print(f"  Part {i}: {len(m.vertices)} vertices, {len(m.faces)} faces")
-        m.export(output_dir + f'{i:06d}.ply')
+    print(f"Pos Mesh: {len(cut_result.pos_mesh.vertices)} vertices, {len(cut_result.pos_mesh.faces)} faces")
+    print(f"Neg Mesh: {len(cut_result.neg_mesh.vertices)} vertices, {len(cut_result.neg_mesh.faces)} faces")
+    cut_result.pos_mesh.export(output_dir + 'pos_mesh.ply')
+    cut_result.neg_mesh.export(output_dir + 'neg_mesh.ply')
 
     print(f"{len(cut_result.boundary_loops)} boundary loops")
     for j, loop in enumerate(cut_result.boundary_loops):
         print(f"  loop {j}: {len(loop)} vertex pairs")
-
-    #PlaneMeshCutter.visualize(cut_result.meshes, plane)
     return True
