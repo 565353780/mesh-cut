@@ -3,7 +3,7 @@ git clone https://github.com/565353780/mesh-sample.git
 git clone https://github.com/565353780/diff-curvature.git
 
 pip install -U numpy open3d scipy scikit-learn matplotlib \
-  tqdm shapely rtree mapbox-earcut
+  tqdm shapely rtree mapbox-earcut trimesh
 
 cd mesh-sample
 ./setup.sh
