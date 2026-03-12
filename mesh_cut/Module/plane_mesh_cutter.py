@@ -37,17 +37,9 @@ def _merge_close_points(
 
 
 @dataclass
-class BoundaryLoopMatch:
-    positive_loop_idx: int
-    negative_loop_idx: int
-    transport_cost: float
-
-
-@dataclass
 class CutResult:
     meshes: List[trimesh.Trimesh] = field(default_factory=list)
-    boundary_loops: List[List[np.ndarray]] = field(default_factory=list)
-    matched_loops: List[BoundaryLoopMatch] = field(default_factory=list)
+    boundary_loops: List[List[Tuple[int, int]]] = field(default_factory=list)
 
 
 class PlaneMeshCutter(object):
@@ -110,46 +102,6 @@ class PlaneMeshCutter(object):
                     loops.append(unique_pts[np.array(loop)])
 
         return loops
-
-    @staticmethod
-    def _loop_centroid_from_coords(
-        loop: np.ndarray,
-    ) -> np.ndarray:
-        return loop.mean(axis=0)
-
-    @staticmethod
-    def _match_boundary_loops(
-        positive_loops: List[np.ndarray],
-        negative_loops: List[np.ndarray],
-    ) -> List[BoundaryLoopMatch]:
-        if len(positive_loops) == 0 or len(negative_loops) == 0:
-            return []
-
-        pos_centroids = np.array([
-            PlaneMeshCutter._loop_centroid_from_coords(lp)
-            for lp in positive_loops
-        ])
-        neg_centroids = np.array([
-            PlaneMeshCutter._loop_centroid_from_coords(lp)
-            for lp in negative_loops
-        ])
-
-        cost_matrix = np.linalg.norm(
-            pos_centroids[:, None, :] - neg_centroids[None, :, :], axis=2
-        )
-
-        from scipy.optimize import linear_sum_assignment
-        row_ind, col_ind = linear_sum_assignment(cost_matrix)
-
-        matches = []
-        for r, c in zip(row_ind, col_ind):
-            matches.append(BoundaryLoopMatch(
-                positive_loop_idx=int(r),
-                negative_loop_idx=int(c),
-                transport_cost=float(cost_matrix[r, c]),
-            ))
-
-        return matches
 
     @staticmethod
     def _split_face(
@@ -335,40 +287,37 @@ class PlaneMeshCutter(object):
 
         result = CutResult()
 
-        # 边界环直接从 line segments 提取
         if len(lines) > 0:
-            boundary_loops = PlaneMeshCutter._extract_boundary_loops_from_segments(lines)
+            boundary_loops_coords = PlaneMeshCutter._extract_boundary_loops_from_segments(lines)
         else:
-            boundary_loops = []
+            boundary_loops_coords = []
 
-        for tag, v_list, f_list in [
-            ("positive", pos_verts_list, pos_faces_list),
-            ("negative", neg_verts_list, neg_faces_list),
+        parts: List[Union[trimesh.Trimesh, None]] = []
+        for v_list, f_list in [
+            (pos_verts_list, pos_faces_list),
+            (neg_verts_list, neg_faces_list),
         ]:
             if len(v_list) == 0:
-                result.meshes.append(None)
-                result.boundary_loops.append([])
+                parts.append(None)
                 continue
 
             all_verts = np.vstack(v_list)
             all_faces = np.vstack(f_list)
-            part = trimesh.Trimesh(vertices=all_verts, faces=all_faces, process=True)
-            result.meshes.append(part)
-            result.boundary_loops.append(boundary_loops)
+            parts.append(trimesh.Trimesh(vertices=all_verts, faces=all_faces, process=True))
 
-        if (
-            len(result.meshes) == 2
-            and result.meshes[0] is not None
-            and result.meshes[1] is not None
-            and len(result.boundary_loops[0]) > 0
-            and len(result.boundary_loops[1]) > 0
-        ):
-            result.matched_loops = PlaneMeshCutter._match_boundary_loops(
-                result.boundary_loops[0],
-                result.boundary_loops[1],
-            )
+        pos_part, neg_part = parts[0], parts[1]
 
-        result.meshes = [m for m in result.meshes if m is not None]
+        if pos_part is not None and neg_part is not None and len(boundary_loops_coords) > 0:
+            from scipy.spatial import cKDTree
+            pos_tree = cKDTree(pos_part.vertices)
+            neg_tree = cKDTree(neg_part.vertices)
+            for loop_coords in boundary_loops_coords:
+                _, pos_indices = pos_tree.query(loop_coords)
+                _, neg_indices = neg_tree.query(loop_coords)
+                paired_loop = list(zip(pos_indices.tolist(), neg_indices.tolist()))
+                result.boundary_loops.append(paired_loop)
+
+        result.meshes = [p for p in parts if p is not None]
 
         return result
 
