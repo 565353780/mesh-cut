@@ -1,0 +1,33 @@
+import os
+
+from mesh_cut.Data.plane import Plane
+from mesh_cut.Method.io import loadMeshFile
+from mesh_cut.Module.plane_mesh_cutter import PlaneMeshCutter
+
+
+def demo():
+    mesh_file_path = "/Users/chli/Downloads/tmp/mesh_cut_results/Hitem3d-1773294165381.glb"
+    output_dir = "/Users/chli/Downloads/tmp/mesh_cut_results/"
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    print("Loading mesh from", mesh_file_path)
+    mesh = loadMeshFile(mesh_file_path)
+    if mesh is None:
+        print("[ERROR][demo] failed to load mesh")
+        return False
+
+    plane = Plane(
+        pos=mesh.centroid,
+        normal=[0, 1, 0],
+    )
+
+    print("Cutting mesh by plane...")
+    mesh_list = PlaneMeshCutter.cut(mesh, plane)
+
+    print(f"Cut into {len(mesh_list)} parts")
+    for i, m in enumerate(mesh_list):
+        print(f"  Part {i}: {len(m.vertices)} vertices, {len(m.faces)} faces")
+
+    PlaneMeshCutter.visualize(mesh_list, plane)
+    return True
